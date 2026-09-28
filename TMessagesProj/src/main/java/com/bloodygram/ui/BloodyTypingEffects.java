@@ -255,9 +255,9 @@ public class BloodyTypingEffects implements TextWatcher {
 
     private static class Dust extends android.graphics.drawable.Drawable {
 
-        private static final int LIFE_MIN = 500;
-        private static final int LIFE_MAX = 900;
-        private static final int SWEEP = 180; // left letters go first
+        private static final int LIFE_MIN = 650;
+        private static final int LIFE_MAX = 1150;
+        private static final int SWEEP = 70; // left letters start scattering just slightly before right ones
 
         View host;
         final Paint paint = new Paint();
@@ -316,20 +316,21 @@ public class BloodyTypingEffects implements TextWatcher {
 
         @Override
         public void draw(@NonNull Canvas canvas) {
+            // Particles move from frame 0 — no standing-still period (the letter shape must scatter
+            // immediately, not linger). `delay[i]` only staggers how soon each one starts fading out,
+            // so the crumble still reads left-to-right without ever freezing a particle in place.
             float t = SystemClock.uptimeMillis() - start;
             boolean alive = false;
             for (int i = 0; i < count; i++) {
-                float lt = t - delay[i];
-                float px = x[i], py = y[i], a = 1f;
-                if (lt > 0) {
-                    float p = lt / life[i];
-                    if (p >= 1f) {
-                        continue;
-                    }
-                    px += vx[i] * lt + dp(10) * p * p;
-                    py += vy[i] * lt;
-                    a = 1f - p * p;
+                float p = Utilities.clamp(t / life[i], 1f, 0f);
+                if (p >= 1f) {
+                    continue;
                 }
+                float px = x[i] + vx[i] * t + dp(10) * p * p;
+                float py = y[i] + vy[i] * t;
+                float fadeStart = Utilities.clamp(delay[i] / life[i], 0.6f, 0f);
+                float fadeP = Utilities.clamp((p - fadeStart) / (1f - fadeStart), 1f, 0f);
+                float a = 1f - fadeP * fadeP; // eased, gradual crumble instead of an abrupt cutoff
                 alive = true;
                 int c = color[i];
                 paint.setColor(c);

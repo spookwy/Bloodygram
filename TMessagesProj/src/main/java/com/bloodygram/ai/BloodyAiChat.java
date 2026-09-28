@@ -28,6 +28,9 @@ public class BloodyAiChat {
     private static final int MAX_MESSAGES = 150;
 
     public static void summarize(ChatActivity fragment) {
+        if (fragment.getParentActivity() == null) {
+            return;
+        }
         String transcript = transcript(fragment, MAX_MESSAGES);
         if (transcript.isEmpty()) {
             BulletinFactory.of(fragment).createErrorBulletin(BloodyStrings.get(R.string.BloodyAiNothing)).show();
@@ -40,6 +43,9 @@ public class BloodyAiChat {
                         + "Use a few short bullet points starting with \"• \".",
                 transcript, BetaOutputConfig.Effort.MEDIUM, (answer, error) -> {
                     progress.dismiss();
+                    if (fragment.getParentActivity() == null) {
+                        return;
+                    }
                     if (answer == null) {
                         BulletinFactory.of(fragment).createErrorBulletin(error).show();
                         return;
@@ -53,6 +59,9 @@ public class BloodyAiChat {
     }
 
     public static void suggestReplies(ChatActivity fragment) {
+        if (fragment.getParentActivity() == null) {
+            return;
+        }
         String transcript = transcript(fragment, 40);
         if (transcript.isEmpty()) {
             BulletinFactory.of(fragment).createErrorBulletin(BloodyStrings.get(R.string.BloodyAiNothing)).show();
@@ -65,6 +74,9 @@ public class BloodyAiChat {
                         + "Output only the 3 replies, one per line, without numbering or quotes.",
                 transcript, BetaOutputConfig.Effort.LOW, (answer, error) -> {
                     progress.dismiss();
+                    if (fragment.getParentActivity() == null) {
+                        return;
+                    }
                     if (answer == null) {
                         BulletinFactory.of(fragment).createErrorBulletin(error).show();
                         return;

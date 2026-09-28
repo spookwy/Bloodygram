@@ -148,6 +148,7 @@
     <string name="BloodyAutoDelete1d_ru">1 день</string>
     <string name="BloodySpring_ru">Пружинные анимации</string>
     <string name="BloodyBlur_ru">Размытие под шапкой и панелями</string>
+    <string name="BloodyLiquidGlass_ru">Жидкое стекло (ярче, прозрачнее)</string>
     <string name="BloodyFont_ru">Шрифт сообщений</string>
     <string name="BloodyFontDefault_ru">Стандартный</string>
     <string name="BloodyFontLight_ru">Тонкий</string>
@@ -162,6 +163,7 @@
     <string name="BloodyEffectEmbers_ru">Угли</string>
     <string name="BloodyEffectAsh_ru">Пепел</string>
     <string name="BloodyEffectSparks_ru">Искры</string>
+    <string name="BloodyEffectTopo_ru">Топокарта</string>
     <string name="BloodyEffectFire_ru">Огонь</string>
     <string name="BloodyBubbleRadius_ru">Скругление пузырей</string>
     <string name="BloodyChatEffectInfo_ru">Шрифт применяется к заново открытым чатам.</string>

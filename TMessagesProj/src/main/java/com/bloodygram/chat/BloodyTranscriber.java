@@ -100,6 +100,8 @@ public class BloodyTranscriber {
 
     // region file
 
+    private static final int FILE_WAIT_TIMEOUT = 30_000;
+
     private static void withFile(MessageObject message, Utilities.Callback<File> callback) {
         int account = message.currentAccount;
         File file = FileLoader.getInstance(account).getPathToMessage(message.messageOwner);
@@ -112,16 +114,30 @@ public class BloodyTranscriber {
         String name = FileLoader.getAttachFileName(document);
         NotificationCenter center = NotificationCenter.getInstance(account);
         NotificationCenter.NotificationCenterDelegate[] observer = new NotificationCenter.NotificationCenterDelegate[1];
-        observer[0] = (id, acc, args) -> {
-            if (name.equals(args[0])) {
+        boolean[] done = {false};
+        Runnable cleanup = () -> {
+            if (!done[0]) {
+                done[0] = true;
                 center.removeObserver(observer[0], NotificationCenter.fileLoaded);
                 center.removeObserver(observer[0], NotificationCenter.fileLoadFailed);
+            }
+        };
+        observer[0] = (id, acc, args) -> {
+            if (name.equals(args[0]) && !done[0]) {
+                cleanup.run();
                 callback.run(id == NotificationCenter.fileLoaded ? readable(FileLoader.getInstance(account).getPathToMessage(message.messageOwner)) : null);
             }
         };
         center.addObserver(observer[0], NotificationCenter.fileLoaded);
         center.addObserver(observer[0], NotificationCenter.fileLoadFailed);
         FileLoader.getInstance(account).loadFile(document, message, FileLoader.PRIORITY_HIGH, message.shouldEncryptPhotoOrVideo() ? 2 : 0);
+        // the load can be silently dropped (offline, cancelled elsewhere) with neither notification ever firing
+        AndroidUtilities.runOnUIThread(() -> {
+            if (!done[0]) {
+                cleanup.run();
+                callback.run(null);
+            }
+        }, FILE_WAIT_TIMEOUT);
     }
 
     /** The plain file, or a decrypted temp copy of a view-once one (Telegram keeps those encrypted). */

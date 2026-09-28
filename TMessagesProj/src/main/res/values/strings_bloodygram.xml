@@ -150,6 +150,7 @@
     <string name="BloodyAutoDelete1d">1 day</string>
     <string name="BloodySpring">Spring animations</string>
     <string name="BloodyBlur">Blur under header and panels</string>
+    <string name="BloodyLiquidGlass">Liquid glass (brighter, more transparent)</string>
     <string name="BloodyFont">Message font</string>
     <string name="BloodyFontDefault">Default</string>
     <string name="BloodyFontLight">Light</string>
@@ -164,6 +165,7 @@
     <string name="BloodyEffectEmbers">Embers</string>
     <string name="BloodyEffectAsh">Ash</string>
     <string name="BloodyEffectSparks">Sparks</string>
+    <string name="BloodyEffectTopo">Topo map</string>
     <string name="BloodyEffectFire">Fire</string>
     <string name="BloodyBubbleRadius">Bubble corners</string>
     <string name="BloodyChatEffectInfo">The font applies to newly opened chats.</string>

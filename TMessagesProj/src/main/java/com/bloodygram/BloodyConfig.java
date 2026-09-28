@@ -45,6 +45,7 @@ public class BloodyConfig {
     public static final int PARTICLES_SNOW = 1;
     public static final int PARTICLES_ASH = 2;
     public static final int PARTICLES_SPARKS = 3;
+    public static final int PARTICLES_TOPO = 4;
     /** Unix time when counting of deleted messages started (shown in the stats window). */
     public static int deletedSince;
 
@@ -82,9 +83,17 @@ public class BloodyConfig {
             streakReminderHour = prefs.getInt("streakReminderHour", 21);
             streakCelebration = prefs.getBoolean("streakCelebration", true);
             sendEffects = prefs.getBoolean("sendEffects", true);
-            chatParticles = prefs.getInt("chatParticles", chatSnow ? PARTICLES_SNOW : PARTICLES_OFF);
-            if (chatParticles < 0 || chatParticles > PARTICLES_SPARKS) {
-                chatParticles = PARTICLES_SPARKS; // old embers/fire fall back to sparks
+            // "chatParticles" used to be OFF=0,SNOW=1,EMBERS=2,ASH=3,SPARKS=4; EMBERS was dropped and ASH/SPARKS
+            // shifted down a slot. Read under the old key once and remap, so upgrading users keep their choice.
+            if (prefs.contains("chatParticles") && !prefs.contains("chatParticles2")) {
+                int old = prefs.getInt("chatParticles", PARTICLES_SNOW);
+                chatParticles = old <= 1 ? old : old - 1; // 2(embers)->1(ash), 3(ash)->2(sparks), 4(sparks)->3(sparks)
+                prefs.edit().putInt("chatParticles2", chatParticles).apply();
+            } else {
+                chatParticles = prefs.getInt("chatParticles2", chatSnow ? PARTICLES_SNOW : PARTICLES_OFF);
+            }
+            if (chatParticles < 0 || chatParticles > PARTICLES_TOPO) {
+                chatParticles = PARTICLES_SPARKS;
             }
             springAnimations = prefs.getBoolean("springAnimations", true);
             messageFont = prefs.getInt("messageFont", 0);

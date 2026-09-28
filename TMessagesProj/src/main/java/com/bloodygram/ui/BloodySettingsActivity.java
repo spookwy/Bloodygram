@@ -60,6 +60,7 @@ public class BloodySettingsActivity extends UniversalFragment {
     private static final int ID_AI_MODEL = 32;
     private static final int ID_TRANSCRIBE_LANG = 33;
     private static final int ID_WRAPPED = 34;
+    private static final int ID_LIQUID_GLASS = 35;
 
     private static final String[] TRANSCRIBE_LANGS = {"", "ru-RU", "uk-UA", "en-US"};
 
@@ -121,6 +122,9 @@ public class BloodySettingsActivity extends UniversalFragment {
         items.add(UItem.asCheck(ID_SPRING, BloodyStrings.get(R.string.BloodySpring)).setChecked(BloodyConfig.springAnimations));
         if (BloodyMotion.canBlur()) {
             items.add(UItem.asCheck(ID_BLUR, BloodyStrings.get(R.string.BloodyBlur)).setChecked(BloodyMotion.isBlurOn()));
+            if (BloodyMotion.isBlurOn()) {
+                items.add(UItem.asCheck(ID_LIQUID_GLASS, BloodyStrings.get(R.string.BloodyLiquidGlass)).setChecked(BloodyMotion.isLiquidGlassOn()));
+            }
         }
         items.add(UItem.asButton(ID_FONT, BloodyStrings.get(R.string.BloodyFont), BloodyFonts.names()[Math.max(0, Math.min(BloodyFonts.names().length - 1, BloodyConfig.messageFont))]));
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyAppearanceInfo)));
@@ -128,9 +132,10 @@ public class BloodySettingsActivity extends UniversalFragment {
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyChatEffect)));
         String[] effects = {
                 BloodyStrings.get(R.string.BloodyEffectOff), BloodyStrings.get(R.string.BloodyEffectSnow),
-                BloodyStrings.get(R.string.BloodyEffectAsh), BloodyStrings.get(R.string.BloodyEffectSparks)
+                BloodyStrings.get(R.string.BloodyEffectAsh), BloodyStrings.get(R.string.BloodyEffectSparks),
+                BloodyStrings.get(R.string.BloodyEffectTopo)
         };
-        items.add(UItem.asSlideView(effects, Math.max(0, Math.min(effects.length - 1, BloodyConfig.chatParticles)), index -> BloodyConfig.putInt("chatParticles", BloodyConfig.chatParticles = index)));
+        items.add(UItem.asSlideView(effects, Math.max(0, Math.min(effects.length - 1, BloodyConfig.chatParticles)), index -> BloodyConfig.putInt("chatParticles2", BloodyConfig.chatParticles = index)));
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyBubbleRadius)));
         String[] radii = new String[BUBBLE_RADII.length];
         int chosenRadius = 0;
@@ -259,6 +264,9 @@ public class BloodySettingsActivity extends UniversalFragment {
             listView.adapter.update(true);
         } else if (item.id == ID_BLUR) {
             BloodyMotion.setBlur(!BloodyMotion.isBlurOn());
+            listView.adapter.update(true);
+        } else if (item.id == ID_LIQUID_GLASS) {
+            BloodyMotion.setLiquidGlass(!BloodyMotion.isLiquidGlassOn());
             listView.adapter.update(true);
         } else if (item.id == ID_AI_KEY) {
             android.widget.EditText input = new android.widget.EditText(getParentActivity());

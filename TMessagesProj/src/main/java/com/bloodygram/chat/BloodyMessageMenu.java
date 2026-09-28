@@ -59,6 +59,9 @@ public class BloodyMessageMenu {
     }
 
     private static void explain(ChatActivity fragment, MessageObject message) {
+        if (fragment.getParentActivity() == null) {
+            return;
+        }
         AlertDialog progress = new AlertDialog(fragment.getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
         progress.show();
         if (BloodyTranscriber.canTranscribe(message)) {
@@ -70,7 +73,9 @@ public class BloodyMessageMenu {
             BloodyTranscriber.transcribe(message, (text, error) -> {
                 if (text == null) {
                     progress.dismiss();
-                    BulletinFactory.of(fragment).createErrorBulletin(error).show();
+                    if (fragment.getParentActivity() != null) {
+                        BulletinFactory.of(fragment).createErrorBulletin(error).show();
+                    }
                     return;
                 }
                 BloodyTranscriber.apply(message, text);
@@ -89,6 +94,9 @@ public class BloodyMessageMenu {
                         + "Decode slang, abbreviations and hidden meaning if there is any.";
         BloodyAi.ask(task, text, BetaOutputConfig.Effort.LOW, (answer, error) -> {
             progress.dismiss();
+            if (fragment.getParentActivity() == null) {
+                return;
+            }
             if (answer == null) {
                 BulletinFactory.of(fragment).createErrorBulletin(error).show();
                 return;

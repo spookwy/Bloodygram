@@ -153,11 +153,154 @@ public class BloodyFx {
             ((SnowflakesEffect) system).onDraw(view, canvas);
             return true;
         }
+        if (mode == BloodyConfig.PARTICLES_TOPO) {
+            if (!(system instanceof TopoMap)) {
+                systems.put(view, system = new TopoMap());
+            }
+            ((TopoMap) system).draw(view, canvas);
+            return true;
+        }
         if (!(system instanceof Particles) || ((Particles) system).mode != mode) {
             systems.put(view, system = new Particles(mode));
         }
         ((Particles) system).draw(view, canvas);
         return true;
+    }
+
+    /**
+     * Slowly drifting red contour lines on black, like a topographic map. A coarse value-noise field is
+     * sampled on a grid and its iso-lines (marching squares, one threshold band at a time) are stroked;
+     * the whole field scrolls diagonally over time so the contours crawl, like the animated GLSL reference.
+     */
+    private static class TopoMap {
+        private static final int CELL_DP = 22;   // grid resolution: bigger = cheaper, coarser lines
+        private static final int BANDS = 9;       // number of stacked contour levels
+        private static final float SPEED = 0.008f; // dp/ms drift of the noise field
+
+        private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint backdrop = new Paint();
+        private float[][] field; // noise value per grid corner, [row][col]
+        private int cols, rows;
+        private float cell;
+        private int w, h;
+        private long start;
+        private long lastFrame;
+        private Bitmap frameBitmap;
+        private Canvas frameCanvas;
+
+        TopoMap() {
+            line.setStyle(Paint.Style.STROKE);
+            line.setStrokeWidth(dp(1));
+            line.setColor(0xFFB01A2C);
+            backdrop.setColor(0xFF050303); // full-background mode: paint over the wallpaper underneath, like a map
+        }
+
+        private static final int FRAME_INTERVAL = 90; // ms; a slow crawl doesn't need 60fps recompute
+
+        void draw(View view, Canvas canvas) {
+            if (w != view.getWidth() || h != view.getHeight()) {
+                w = view.getWidth();
+                h = view.getHeight();
+                if (w == 0 || h == 0) {
+                    return;
+                }
+                cell = dp(CELL_DP);
+                cols = (int) (w / cell) + 3;
+                rows = (int) (h / cell) + 3;
+                field = new float[rows][cols];
+                start = SystemClock.uptimeMillis();
+                lastFrame = 0;
+                if (frameBitmap != null) {
+                    frameBitmap.recycle();
+                }
+                frameBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+                frameCanvas = new Canvas(frameBitmap);
+            }
+            long now = SystemClock.uptimeMillis();
+            if (now - lastFrame >= FRAME_INTERVAL) {
+                // recompute the noise field and redraw the cached bitmap only every FRAME_INTERVAL;
+                // a slow crawl doesn't need 60fps marching-squares recompute
+                lastFrame = now;
+                float t = (now - start) * SPEED;
+                float ox = -t, oy = -t * 0.6f;
+                for (int r = 0; r < rows; r++) {
+                    for (int c = 0; c < cols; c++) {
+                        field[r][c] = noise((c * cell + ox) * 0.006f, (r * cell + oy) * 0.006f);
+                    }
+                }
+                frameCanvas.drawRect(0, 0, w, h, backdrop);
+                for (int band = 0; band < BANDS; band++) {
+                    float threshold = (band + 0.5f) / BANDS;
+                    line.setAlpha(band == BANDS / 2 ? 130 : 90);
+                    for (int r = 0; r < rows - 1; r++) {
+                        for (int c = 0; c < cols - 1; c++) {
+                            marchCell(frameCanvas, r, c, threshold);
+                        }
+                    }
+                }
+            }
+            canvas.drawBitmap(frameBitmap, 0, 0, null);
+            view.postInvalidateOnAnimation();
+        }
+
+        /** One cell of marching squares: draws the segment(s) where the field crosses {@code threshold}. */
+        private void marchCell(Canvas canvas, int r, int c, float threshold) {
+            float x0 = c * cell, y0 = r * cell, x1 = x0 + cell, y1 = y0 + cell;
+            float tl = field[r][c], tr = field[r][c + 1], bl = field[r + 1][c], br = field[r + 1][c + 1];
+            int mask = (tl > threshold ? 8 : 0) | (tr > threshold ? 4 : 0) | (br > threshold ? 2 : 0) | (bl > threshold ? 1 : 0);
+            if (mask == 0 || mask == 15) {
+                return;
+            }
+            float top = lerp(x0, x1, invLerp(tl, tr, threshold));
+            float bottom = lerp(x0, x1, invLerp(bl, br, threshold));
+            float left = lerp(y0, y1, invLerp(tl, bl, threshold));
+            float right = lerp(y0, y1, invLerp(tr, br, threshold));
+            switch (mask) {
+                case 1: case 14: canvas.drawLine(x0, left, bottom, y1, line); break;
+                case 2: case 13: canvas.drawLine(bottom, y1, x1, right, line); break;
+                case 3: case 12: canvas.drawLine(x0, left, x1, right, line); break;
+                case 4: case 11: canvas.drawLine(top, y0, x1, right, line); break;
+                case 6: case 9: canvas.drawLine(top, y0, bottom, y1, line); break;
+                case 7: case 8: canvas.drawLine(x0, left, top, y0, line); break;
+                case 5: // saddle: two separate segments
+                    canvas.drawLine(x0, left, top, y0, line);
+                    canvas.drawLine(bottom, y1, x1, right, line);
+                    break;
+                case 10:
+                    canvas.drawLine(top, y0, x1, right, line);
+                    canvas.drawLine(x0, left, bottom, y1, line);
+                    break;
+                default: break;
+            }
+        }
+
+        private static float lerp(float a, float b, float t) {
+            return a + (b - a) * t;
+        }
+
+        private static float invLerp(float a, float b, float v) {
+            if (Math.abs(b - a) < 1e-5f) {
+                return 0.5f;
+            }
+            return Utilities.clamp((v - a) / (b - a), 1f, 0f);
+        }
+
+        /** Smoothed value noise (bilinear-interpolated hash grid), cheap and seamless enough for a slow drift. */
+        private static float noise(float x, float y) {
+            int ix = (int) Math.floor(x), iy = (int) Math.floor(y);
+            float fx = x - ix, fy = y - iy;
+            fx = fx * fx * (3 - 2 * fx);
+            fy = fy * fy * (3 - 2 * fy);
+            float v00 = hash(ix, iy), v10 = hash(ix + 1, iy), v01 = hash(ix, iy + 1), v11 = hash(ix + 1, iy + 1);
+            return lerp(lerp(v00, v10, fx), lerp(v01, v11, fx), fy);
+        }
+
+        private static float hash(int x, int y) {
+            int h = x * 374761393 + y * 668265263;
+            h = (h ^ (h >> 13)) * 1274126177;
+            h = h ^ (h >> 16);
+            return (h & 0xFFFF) / 65535f;
+        }
     }
 
     /** Ash drifts down; sparks are glowing embers floating up from a warm glow at the bottom. */

@@ -40,4 +40,17 @@ public class BloodyMotion {
     public static void setBlur(boolean on) {
         LiteMode.toggleFlag(LiteMode.FLAG_CHAT_BLUR, on);
     }
+
+    /** Telegram's own "Liquid Glass" look (brighter, more transparent blur on header/panels), off by default. */
+    public static boolean isLiquidGlassOn() {
+        return LiteMode.isEnabledSetting(LiteMode.FLAG_LIQUID_GLASS);
+    }
+
+    /** Needs blur itself on to have any visible effect. */
+    public static void setLiquidGlass(boolean on) {
+        LiteMode.toggleFlag(LiteMode.FLAG_LIQUID_GLASS, on);
+        if (on && !isBlurOn()) {
+            setBlur(true);
+        }
+    }
 }
