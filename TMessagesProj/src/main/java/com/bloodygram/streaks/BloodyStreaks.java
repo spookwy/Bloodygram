@@ -251,6 +251,22 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
         return suffix == null || title == null ? title : TextUtils.concat(title, suffix.text);
     }
 
+    /** Chats whose streak goes out at midnight: {dialogId, streak}; delivered on the UI thread after the DB is loaded. */
+    public void collectAtRisk(Utilities.Callback<ArrayList<long[]>> callback) {
+        queue.postRunnable(() -> {
+            ArrayList<long[]> result = new ArrayList<>();
+            int yesterday = today() - 1;
+            BloodyConfig.load();
+            for (Map.Entry<Long, Streak> entry : streaks.entrySet()) {
+                Streak s = entry.getValue();
+                if (s.lastBothDay == yesterday && s.length >= Math.max(1, BloodyConfig.streakMinDays)) {
+                    result.add(new long[]{entry.getKey(), s.length});
+                }
+            }
+            AndroidUtilities.runOnUIThread(() -> callback.run(result));
+        });
+    }
+
     /** Reads the stats snapshot on the streaks queue and delivers it on the UI thread. */
     public void getStats(long dialogId, Utilities.Callback<Stats> callback) {
         queue.postRunnable(() -> {
@@ -425,7 +441,15 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
                 changed |= mark(dialogId, marks.get(i)[0], marks.get(i)[1], true);
             }
             if (changed) {
+                Streak before = streaks.get(dialogId);
                 recompute(dialogId);
+                Streak after = streaks.get(dialogId);
+                int today = today();
+                if (after != null && after.lastBothDay == today && (before == null || before.lastBothDay < today) && isCounted(dialogId)) {
+                    // both wrote today for the first time: the streak grew
+                    int length = after.length;
+                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.bloodyStreakGrew, dialogId, length));
+                }
                 notifyUi();
             }
         });

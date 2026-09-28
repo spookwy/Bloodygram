@@ -479,6 +479,7 @@
             android:exported="false"
             android:foregroundServiceType="remoteMessaging"
         />
+        <receiver android:name="com.bloodygram.streaks.BloodyStreakReminder" android:exported="false" />
         <service
             android:name=".NotificationsService"
             android:enabled="true"

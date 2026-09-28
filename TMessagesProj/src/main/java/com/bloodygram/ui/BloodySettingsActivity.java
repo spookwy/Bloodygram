@@ -40,6 +40,18 @@ public class BloodySettingsActivity extends UniversalFragment {
     private static final int ID_CHAT_SNOW = 13;
     private static final int ID_TYPING_ANIMATION = 14;
     private static final int ID_ERASE_DUST = 15;
+    private static final int ID_GHOST = 16;
+    private static final int ID_GHOST_READ = 17;
+    private static final int ID_GHOST_ONLINE = 18;
+    private static final int ID_GHOST_TYPING = 19;
+    private static final int ID_GHOST_STORIES = 20;
+    private static final int ID_SAVE_SECRET = 21;
+    private static final int ID_HIDDEN_CHATS = 22;
+    private static final int ID_CHANGE_PIN = 23;
+    private static final int ID_STREAK_REMINDER = 24;
+    private static final int ID_STREAK_CELEBRATION = 25;
+
+    private static final int[] REMINDER_HOURS = {18, 19, 20, 21, 22, 23};
 
     private static final int[] STREAK_MIN_DAYS = {0, 1, 2, 3, 5, 7, 10, 30, 100};
 
@@ -51,6 +63,25 @@ public class BloodySettingsActivity extends UniversalFragment {
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         BloodyConfig.load();
+        boolean ghost = BloodyConfig.isGhost(currentAccount);
+        items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyGhostSection)));
+        items.add(UItem.asCheck(ID_GHOST, BloodyStrings.get(R.string.BloodyGhostEnabled)).setChecked(ghost));
+        if (ghost) {
+            items.add(UItem.asCheck(ID_GHOST_READ, BloodyStrings.get(R.string.BloodyGhostHideRead)).setChecked(BloodyConfig.ghostRead));
+            items.add(UItem.asCheck(ID_GHOST_ONLINE, BloodyStrings.get(R.string.BloodyGhostHideOnline)).setChecked(BloodyConfig.ghostOnline));
+            items.add(UItem.asCheck(ID_GHOST_TYPING, BloodyStrings.get(R.string.BloodyGhostHideTyping)).setChecked(BloodyConfig.ghostTyping));
+            items.add(UItem.asCheck(ID_GHOST_STORIES, BloodyStrings.get(R.string.BloodyGhostHideStories)).setChecked(BloodyConfig.ghostStories));
+        }
+        items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyGhostInfo)));
+
+        items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyPrivacySection)));
+        items.add(UItem.asCheck(ID_SAVE_SECRET, BloodyStrings.get(R.string.BloodySaveSecret)).setChecked(BloodyConfig.saveSecretMedia));
+        items.add(UItem.asButton(ID_HIDDEN_CHATS, R.drawable.msg_archive_hide, BloodyStrings.get(R.string.BloodyHiddenChats)));
+        if (com.bloodygram.vault.BloodyVault.hasPin()) {
+            items.add(UItem.asButton(ID_CHANGE_PIN, R.drawable.msg_secret, BloodyStrings.get(R.string.BloodyChangePin)));
+        }
+        items.add(UItem.asShadow(BloodyStrings.format(R.string.BloodySaveSecretInfo, BloodyStrings.formatNumber(BloodyConfig.prefs().getInt("secretSaved", 0)))));
+
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodySettingsMessages)));
         items.add(UItem.asCheck(ID_SAVE_DELETED, BloodyStrings.get(R.string.BloodySaveDeleted)).setChecked(BloodyConfig.saveDeletedMessages));
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodySaveDeletedInfo)));
@@ -95,6 +126,24 @@ public class BloodySettingsActivity extends UniversalFragment {
         }
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyStreaksInfo)));
         if (BloodyConfig.streaksEnabled) {
+            items.add(UItem.asCheck(ID_STREAK_REMINDER, BloodyStrings.get(R.string.BloodyStreakReminder)).setChecked(BloodyConfig.streakReminder));
+            if (BloodyConfig.streakReminder) {
+                items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyStreakReminderTime)));
+                String[] hours = new String[REMINDER_HOURS.length];
+                int chosenHour = 0;
+                for (int i = 0; i < hours.length; i++) {
+                    hours[i] = REMINDER_HOURS[i] + ":00";
+                    if (REMINDER_HOURS[i] == BloodyConfig.streakReminderHour) {
+                        chosenHour = i;
+                    }
+                }
+                items.add(UItem.asSlideView(hours, chosenHour, index -> {
+                    BloodyConfig.putInt("streakReminderHour", BloodyConfig.streakReminderHour = REMINDER_HOURS[index]);
+                    com.bloodygram.streaks.BloodyStreakReminder.schedule();
+                }));
+            }
+            items.add(UItem.asCheck(ID_STREAK_CELEBRATION, BloodyStrings.get(R.string.BloodyStreakCelebration)).setChecked(BloodyConfig.streakCelebration));
+            items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyStreakCelebrationInfo)));
             items.add(UItem.asButton(ID_STREAK_RECALC, BloodyStrings.get(R.string.BloodyStreakRecalc)).accent());
             items.add(UItem.asShadow(null));
         }
@@ -161,6 +210,39 @@ public class BloodySettingsActivity extends UniversalFragment {
         } else if (item.id == ID_ERASE_DUST) {
             BloodyConfig.setEraseDust(!BloodyConfig.eraseDust);
             listView.adapter.update(true);
+        } else if (item.id == ID_GHOST) {
+            com.bloodygram.ghost.BloodyGhost.setEnabled(currentAccount, !BloodyConfig.isGhost(currentAccount));
+            listView.adapter.update(true);
+        } else if (item.id == ID_GHOST_READ) {
+            BloodyConfig.putBoolean("ghostRead", BloodyConfig.ghostRead = !BloodyConfig.ghostRead);
+            listView.adapter.update(true);
+        } else if (item.id == ID_GHOST_ONLINE) {
+            BloodyConfig.putBoolean("ghostOnline", BloodyConfig.ghostOnline = !BloodyConfig.ghostOnline);
+            listView.adapter.update(true);
+        } else if (item.id == ID_GHOST_TYPING) {
+            BloodyConfig.putBoolean("ghostTyping", BloodyConfig.ghostTyping = !BloodyConfig.ghostTyping);
+            listView.adapter.update(true);
+        } else if (item.id == ID_GHOST_STORIES) {
+            BloodyConfig.putBoolean("ghostStories", BloodyConfig.ghostStories = !BloodyConfig.ghostStories);
+            listView.adapter.update(true);
+        } else if (item.id == ID_STREAK_REMINDER) {
+            BloodyConfig.putBoolean("streakReminder", BloodyConfig.streakReminder = !BloodyConfig.streakReminder);
+            com.bloodygram.streaks.BloodyStreakReminder.schedule();
+            listView.adapter.update(true);
+        } else if (item.id == ID_STREAK_CELEBRATION) {
+            BloodyConfig.putBoolean("streakCelebration", BloodyConfig.streakCelebration = !BloodyConfig.streakCelebration);
+            listView.adapter.update(true);
+        } else if (item.id == ID_SAVE_SECRET) {
+            BloodyConfig.putBoolean("saveSecretMedia", BloodyConfig.saveSecretMedia = !BloodyConfig.saveSecretMedia);
+            listView.adapter.update(true);
+        } else if (item.id == ID_HIDDEN_CHATS) {
+            com.bloodygram.vault.BloodyVault.openHiddenChats(this);
+        } else if (item.id == ID_CHANGE_PIN) {
+            com.bloodygram.vault.BloodyVault.requirePin(getParentActivity(), () -> {
+                com.bloodygram.vault.BloodyVault.setPin(null);
+                com.bloodygram.vault.BloodyVault.requirePin(getParentActivity(), () ->
+                        BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, BloodyStrings.get(R.string.BloodyPinChanged)).show());
+            });
         } else if (item.id == ID_STREAK_RECALC) {
             BloodyStreaks.getInstance(currentAccount).recalcAll();
             BulletinFactory.of(this).createSimpleBulletin(R.raw.info, BloodyStrings.get(R.string.BloodyStreakRecalcDone)).show();

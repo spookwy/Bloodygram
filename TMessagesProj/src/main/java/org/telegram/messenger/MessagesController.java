@@ -1553,6 +1553,7 @@ public class MessagesController extends BaseController implements NotificationCe
         ImageLoader.getInstance();
         getMessagesStorage();
         getLocationController();
+        AndroidUtilities.runOnUIThread(() -> com.bloodygram.Bloody.onAccountReady(num)); // Bloodygram
         AndroidUtilities.runOnUIThread(() -> {
             MessagesController messagesController = getMessagesController();
             getNotificationCenter().addObserver(messagesController, NotificationCenter.fileUploaded);

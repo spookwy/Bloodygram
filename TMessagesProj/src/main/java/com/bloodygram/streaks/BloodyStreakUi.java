@@ -220,7 +220,7 @@ public class BloodyStreakUi {
     private static class StatsView {
         final LinearLayout root;
         final ImageView icon;
-        final TextView streak, status, me, them, rule, progress, days, total, mine, theirs, deleted;
+        final TextView streak, status, me, them, rule, progress, days, total, mine, theirs, deleted, achievements;
         final View barMe, barThem;
         final ProgressBar scanBar;
         final String name;
@@ -247,6 +247,8 @@ public class BloodyStreakUi {
             root.addView(head, new LinearLayout.LayoutParams(-1, -2));
             status = text(context, 14, gray, false);
             root.addView(status, margins(4));
+            achievements = text(context, 13, gray, false);
+            root.addView(achievements, margins(6));
             scanBar = new ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal);
             scanBar.setIndeterminate(true);
             scanBar.setIndeterminateTintList(ColorStateList.valueOf(Theme.getColor(Theme.key_featuredStickers_addButton)));
@@ -295,6 +297,13 @@ public class BloodyStreakUi {
             icon.setImageDrawable(BloodyFire.drawable(dp(40), BloodyFire.tier(streakDays, atRisk)));
             streak.setText(BloodyStrings.format(R.string.BloodyFireDaysInRow, BloodyStrings.days(streakDays)));
             int flood = (int) Math.max(0, (streaks.floodUntil - System.currentTimeMillis()) / 1000);
+            achievements.setText(achievementsText(streakDays));
+            icon.setOnClickListener(v -> {
+                if (streakDays > 0 && v.getRootView() instanceof android.view.ViewGroup) {
+                    // the stats window is a dialog: play inside its window, the activity is below it
+                    BloodyStreakCelebration.show((android.view.ViewGroup) v.getRootView(), v.getContext(), streaks.account, streakDays, dialogId);
+                }
+            });
             boolean counting = !streaks.isCounted(dialogId);
             scanBar.setVisibility(counting ? View.VISIBLE : View.GONE);
             if (counting) {
@@ -364,6 +373,25 @@ public class BloodyStreakUi {
             BloodyConfig.load();
             String since = new SimpleDateFormat("dd.MM", Locale.US).format(new Date(BloodyConfig.deletedSince * 1000L));
             deleted.setText(BloodyStrings.formatNumber(s.deleted) + " (" + (BloodyStrings.isRussian() ? "с " : "since ") + since + ")");
+        }
+
+        /** "🏅 7 · 30 · 50 · 100 · ◦200 · ◦300": reached milestones and the next ones. */
+        private CharSequence achievementsText(int streakDays) {
+            SpannableStringBuilder sb = new SpannableStringBuilder(BloodyStrings.get(R.string.BloodyAchievements)).append(" ");
+            int shownNext = 0;
+            for (int m : BloodyStreakCelebration.milestones()) {
+                boolean reached = streakDays >= m;
+                if (!reached && shownNext >= 2) {
+                    break;
+                }
+                if (!reached) {
+                    shownNext++;
+                }
+                int start = sb.length();
+                sb.append(reached ? "🏅" + m : "◦" + m).append("  ");
+                sb.setSpan(new android.text.style.ForegroundColorSpan(reached ? 0xFFFFB300 : gray), start, sb.length(), SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            return sb;
         }
 
         private TextView text(Context context, int sp, int color, boolean bold) {

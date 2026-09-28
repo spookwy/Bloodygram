@@ -3689,8 +3689,7 @@ public class ChatActivity extends BaseFragment implements
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(final int id) {
-                if (id == com.bloodygram.streaks.BloodyStreakUi.MENU_ID) { // Bloodygram
-                    com.bloodygram.streaks.BloodyStreakUi.showStats(ChatActivity.this, currentAccount, dialog_id);
+                if (com.bloodygram.ui.BloodyChatMenu.onItemClick(ChatActivity.this, id, currentAccount, dialog_id)) { // Bloodygram
                     return;
                 }
                 if (id == -1) {
@@ -4412,7 +4411,7 @@ public class ChatActivity extends BaseFragment implements
                     headerItem.hideSubItem(video_call);
                 }
                 if (chatMode == 0) {
-                    com.bloodygram.streaks.BloodyStreakUi.addMenuItem(headerItem, currentAccount, dialog_id, true); // Bloodygram
+                    com.bloodygram.ui.BloodyChatMenu.addItems(ChatActivity.this, headerItem, currentAccount, dialog_id); // Bloodygram
                 }
             }
 
@@ -8975,6 +8974,7 @@ public class ChatActivity extends BaseFragment implements
         onBottomItemsVisibilityChanged();
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
         Timer.finish(t);
+        com.bloodygram.vault.BloodyVault.attachChatLock(this, (ViewGroup) fragmentView, dialog_id); // Bloodygram
 
         return fragmentView;
     }

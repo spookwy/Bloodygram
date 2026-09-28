@@ -2737,6 +2737,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
         try {
             CharSequence messageStringFinal;
+            if (com.bloodygram.vault.BloodyVault.isLocked(currentAccount, currentDialogId)) { // Bloodygram: no preview for locked chats
+                messageString = com.bloodygram.vault.BloodyVault.lockedPreview();
+                messageNameString = null;
+                thumbsCount = 0;
+            }
             // Removing links and bold spans to get rid of underlining and boldness
             if (messageString instanceof Spannable) {
                 Spannable messageStringSpannable = (Spannable) messageString;
@@ -6251,7 +6256,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             int draftHash = draftMessage == null ? 0 : draftMessage.message.hashCode() + (draftMessage.reply_to != null ? (draftMessage.reply_to.reply_to_msg_id << 16) : 0);
             boolean hasCall = chat != null && chat.call_active && chat.call_not_empty;
             boolean translated = MessagesController.getInstance(currentAccount).getTranslateController().isTranslatingDialog(currentDialogId);
-            int bloodyFire = user != null && customDialog == null ? com.bloodygram.streaks.BloodyStreakUi.listHash(currentAccount, currentDialogId) : 0; // Bloodygram
+            int bloodyFire = com.bloodygram.ui.BloodyChatMenu.cellHash(currentAccount, currentDialogId, user != null && customDialog == null); // Bloodygram: streak / lock changes rebuild the cell
             if (lastDrawnSizeHash == sizeHash &&
                     lastDrawnBloodyFire == bloodyFire && // Bloodygram
                     lastDrawnMessageId == messageHash &&

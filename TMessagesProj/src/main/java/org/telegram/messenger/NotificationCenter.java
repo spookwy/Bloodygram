@@ -44,6 +44,7 @@ public class NotificationCenter {
     public static final int messagesDeleted = totalEvents++;
     public static final int bloodyMessagesMarkedDeleted = totalEvents++; // Bloodygram
     public static final int bloodyStreaksUpdated = totalEvents++; // Bloodygram
+    public static final int bloodyStreakGrew = totalEvents++; // Bloodygram
     public static final int historyCleared = totalEvents++;
     public static final int messagesRead = totalEvents++;
     public static final int threadMessagesRead = totalEvents++;

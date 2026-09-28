@@ -3514,7 +3514,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo_2).mutate();
                 logoDrawable.setBounds(0, dp(2), logoDrawable.getIntrinsicWidth(), dp(2) + logoDrawable.getIntrinsicHeight());
                 logoDrawable.setColorFilter(getThemedColor(Theme.key_telegram_color_dialogsLogo), PorterDuff.Mode.MULTIPLY);
-                CharSequence ssb = com.bloodygram.BloodyStrings.appTitle(); // Bloodygram: text title instead of the Telegram wordmark
+                CharSequence ssb = com.bloodygram.BloodyStrings.appTitle(currentAccount); // Bloodygram: text title instead of the Telegram wordmark
                 actionBar.setTitle(ssb, statusDrawable);
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
@@ -10985,7 +10985,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private ArrayList<TLRPC.Dialog> botShareDialogs;
 
     @NonNull
-    public ArrayList<TLRPC.Dialog> getDialogsArray(int currentAccount, int dialogsType, int folderId, boolean frozen) {
+    public ArrayList<TLRPC.Dialog> getDialogsArray(int currentAccount, int dialogsType, int folderId, boolean frozen) { // Bloodygram: hidden chats are not listed
+        return com.bloodygram.vault.BloodyVault.filterHidden(currentAccount, getDialogsArrayInternal(currentAccount, dialogsType, folderId, frozen));
+    }
+
+    private ArrayList<TLRPC.Dialog> getDialogsArrayInternal(int currentAccount, int dialogsType, int folderId, boolean frozen) {
         if (frozen && frozenDialogsList != null) {
             return frozenDialogsList;
         }
@@ -13716,6 +13720,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
             });
         });
+        com.bloodygram.ui.BloodyChatMenu.addDialogsOptions(this, io); // Bloodygram
         io.addGap();
         io.add(R.drawable.outline_groups_24, getString(R.string.NewGroup), () -> {
             Bundle args = new Bundle();

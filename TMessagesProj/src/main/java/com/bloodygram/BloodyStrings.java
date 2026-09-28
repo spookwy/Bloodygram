@@ -24,10 +24,13 @@ public class BloodyStrings {
 
     private static final SparseIntArray ruIds = new SparseIntArray();
 
-    /** "Bloodygram" title over the chats list, "Bloody" in red. */
-    public static CharSequence appTitle() {
+    /** "Bloodygram" title over the chats list, "Bloody" in red, a ghost when ghost mode is on. */
+    public static CharSequence appTitle(int account) {
         SpannableStringBuilder title = new SpannableStringBuilder(APP_NAME);
         title.setSpan(new ForegroundColorSpan(0xFFE0243C), 0, "Bloody".length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (BloodyConfig.isGhost(account)) {
+            title.append(" 👻");
+        }
         return title;
     }
 
