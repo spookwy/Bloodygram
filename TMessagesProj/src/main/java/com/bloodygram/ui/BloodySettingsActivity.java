@@ -127,7 +127,7 @@ public class BloodySettingsActivity extends UniversalFragment {
 
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyChatEffect)));
         String[] effects = {
-                BloodyStrings.get(R.string.BloodyEffectOff), BloodyStrings.get(R.string.BloodyEffectSnow), BloodyStrings.get(R.string.BloodyEffectEmbers),
+                BloodyStrings.get(R.string.BloodyEffectOff), BloodyStrings.get(R.string.BloodyEffectSnow),
                 BloodyStrings.get(R.string.BloodyEffectAsh), BloodyStrings.get(R.string.BloodyEffectSparks)
         };
         items.add(UItem.asSlideView(effects, Math.max(0, Math.min(effects.length - 1, BloodyConfig.chatParticles)), index -> BloodyConfig.putInt("chatParticles", BloodyConfig.chatParticles = index)));

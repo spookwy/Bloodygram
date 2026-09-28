@@ -43,9 +43,8 @@ public class BloodyConfig {
 
     public static final int PARTICLES_OFF = 0;
     public static final int PARTICLES_SNOW = 1;
-    public static final int PARTICLES_EMBERS = 2;
-    public static final int PARTICLES_ASH = 3;
-    public static final int PARTICLES_SPARKS = 4;
+    public static final int PARTICLES_ASH = 2;
+    public static final int PARTICLES_SPARKS = 3;
     /** Unix time when counting of deleted messages started (shown in the stats window). */
     public static int deletedSince;
 
@@ -84,6 +83,9 @@ public class BloodyConfig {
             streakCelebration = prefs.getBoolean("streakCelebration", true);
             sendEffects = prefs.getBoolean("sendEffects", true);
             chatParticles = prefs.getInt("chatParticles", chatSnow ? PARTICLES_SNOW : PARTICLES_OFF);
+            if (chatParticles < 0 || chatParticles > PARTICLES_SPARKS) {
+                chatParticles = PARTICLES_SPARKS; // old embers/fire fall back to sparks
+            }
             springAnimations = prefs.getBoolean("springAnimations", true);
             messageFont = prefs.getInt("messageFont", 0);
             aiApiKey = prefs.getString("aiApiKey", "");

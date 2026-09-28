@@ -140,6 +140,7 @@
     <string name="BloodyTranscribeNoFile">Couldn\'t read the voice message</string>
     <string name="BloodyTranscribeFailed">Transcription failed</string>
     <string name="BloodyTranscribeNothing">No speech recognized. Check the voice language in Bloodygram settings.</string>
+    <string name="BloodyTranscribeDownloading">Downloading the offline voice model… try again in a minute.</string>
     <string name="BloodyAccountTheme">Theme of this account</string>
     <string name="BloodyAccountThemeShared">Same as everywhere</string>
     <string name="BloodyAutoDeleteSend">Delete for everyone in…</string>
@@ -163,6 +164,7 @@
     <string name="BloodyEffectEmbers">Embers</string>
     <string name="BloodyEffectAsh">Ash</string>
     <string name="BloodyEffectSparks">Sparks</string>
+    <string name="BloodyEffectFire">Fire</string>
     <string name="BloodyBubbleRadius">Bubble corners</string>
     <string name="BloodyChatEffectInfo">The font applies to newly opened chats.</string>
     <string name="BloodyIntro1Text">The Telegram you were missing.\n**Fast**, **beautiful** and a bit **bloody**.</string>

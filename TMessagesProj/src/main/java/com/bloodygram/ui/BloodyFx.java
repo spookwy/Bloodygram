@@ -3,9 +3,14 @@ package com.bloodygram.ui;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RadialGradient;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
@@ -155,23 +160,24 @@ public class BloodyFx {
         return true;
     }
 
-    /** Embers rise and flicker, ash falls slowly, sparks shoot up. */
+    /** Ash drifts down; sparks are glowing embers floating up from a warm glow at the bottom. */
     private static class Particles {
+        static final int[] SPARK_COLORS = {0xFFFFE6A6, 0xFFFFC24A, 0xFFFF8A2A, 0xFFFF5A1F};
         final int mode;
         final int count;
         final float[] x, y, vx, vy, size, phase, life, born;
-        final int[] color;
-        final android.graphics.PorterDuffColorFilter[] filters;
-        final android.graphics.RectF rect = new android.graphics.RectF();
+        final int[] color, ci;
+        final PorterDuffColorFilter[] sparkFilters;
+        final RectF rect = new RectF();
         final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        final Paint trail = new Paint(Paint.ANTI_ALIAS_FLAG);
+        final Paint bottom = new Paint();
         Bitmap glow;
         long lastTime;
         int w, h;
 
         Particles(int mode) {
             this.mode = mode;
-            count = mode == BloodyConfig.PARTICLES_EMBERS ? 55 : mode == BloodyConfig.PARTICLES_ASH ? 70 : 28;
+            count = 70;
             x = new float[count];
             y = new float[count];
             vx = new float[count];
@@ -181,14 +187,21 @@ public class BloodyFx {
             life = new float[count];
             born = new float[count];
             color = new int[count];
-            filters = new android.graphics.PorterDuffColorFilter[count];
-            trail.setStrokeCap(Paint.Cap.ROUND);
-            if (mode == BloodyConfig.PARTICLES_EMBERS) {
-                int s = dp(16);
+            ci = new int[count];
+            if (mode == BloodyConfig.PARTICLES_SPARKS) {
+                paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.ADD));
+                bottom.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.ADD));
+                sparkFilters = new PorterDuffColorFilter[SPARK_COLORS.length];
+                for (int k = 0; k < SPARK_COLORS.length; k++) {
+                    sparkFilters[k] = new PorterDuffColorFilter(SPARK_COLORS[k], PorterDuff.Mode.SRC_IN);
+                }
+                int s = dp(14);
                 glow = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888);
                 Paint g = new Paint(Paint.ANTI_ALIAS_FLAG);
-                g.setShader(new RadialGradient(s / 2f, s / 2f, s / 2f, new int[]{0xFFFFFFFF, 0x66FFFFFF, 0x00FFFFFF}, new float[]{0f, 0.35f, 1f}, Shader.TileMode.CLAMP));
+                g.setShader(new RadialGradient(s / 2f, s / 2f, s / 2f, new int[]{0xFFFFFFFF, 0x66FFFFFF, 0x00FFFFFF}, new float[]{0f, 0.4f, 1f}, Shader.TileMode.CLAMP));
                 new Canvas(glow).drawCircle(s / 2f, s / 2f, s / 2f, g);
+            } else {
+                sparkFilters = null;
             }
         }
 
@@ -197,16 +210,7 @@ public class BloodyFx {
             born[i] = now;
             x[i] = Utilities.fastRandom.nextFloat() * w;
             phase[i] = Utilities.fastRandom.nextFloat() * 6.28f;
-            if (mode == BloodyConfig.PARTICLES_EMBERS) {
-                y[i] = anywhere ? Utilities.fastRandom.nextFloat() * h : h + dp(10);
-                vx[i] = AndroidUtilities.dpf2(-0.01f + 0.02f * Utilities.fastRandom.nextFloat());
-                vy[i] = -AndroidUtilities.dpf2(0.03f + 0.06f * r);
-                size[i] = AndroidUtilities.dpf2(1.5f + 3f * Utilities.fastRandom.nextFloat());
-                life[i] = 6000 + 6000 * Utilities.fastRandom.nextFloat();
-                int[] c = {0xFFFF5A1F, 0xFFFF2E3F, 0xFFFFA23A, 0xFFE0243C};
-                color[i] = c[Utilities.fastRandom.nextInt(c.length)];
-                filters[i] = new android.graphics.PorterDuffColorFilter(color[i], android.graphics.PorterDuff.Mode.SRC_IN);
-            } else if (mode == BloodyConfig.PARTICLES_ASH) {
+            if (mode == BloodyConfig.PARTICLES_ASH) {
                 y[i] = anywhere ? Utilities.fastRandom.nextFloat() * h : -dp(10);
                 vx[i] = AndroidUtilities.dpf2(-0.01f + 0.02f * Utilities.fastRandom.nextFloat());
                 vy[i] = AndroidUtilities.dpf2(0.012f + 0.025f * r);
@@ -214,19 +218,14 @@ public class BloodyFx {
                 life[i] = 20000;
                 int gray = 0x70 + Utilities.fastRandom.nextInt(0x50);
                 color[i] = 0xFF000000 | (gray << 16) | (gray << 8) | gray;
-            } else {
-                y[i] = h + dp(10);
-                x[i] = w * (0.1f + 0.8f * Utilities.fastRandom.nextFloat());
-                double angle = Math.toRadians(-90 + (Utilities.fastRandom.nextFloat() - 0.5f) * 70);
-                float speed = AndroidUtilities.dpf2(0.35f + 0.5f * r);
-                vx[i] = (float) Math.cos(angle) * speed;
-                vy[i] = (float) Math.sin(angle) * speed;
-                size[i] = AndroidUtilities.dpf2(1.2f + 1.3f * Utilities.fastRandom.nextFloat());
-                life[i] = 900 + 900 * Utilities.fastRandom.nextFloat();
-                // sparks come in waves: most of them wait
-                born[i] = now + (anywhere ? 0 : Utilities.fastRandom.nextFloat() * 4000);
-                int[] c = {0xFFFFD27A, 0xFFFF8A2A, 0xFFFF3B4F};
-                color[i] = c[Utilities.fastRandom.nextInt(c.length)];
+            } else { // sparks: embers floating up, denser near the bottom
+                float bias = Utilities.fastRandom.nextFloat();
+                y[i] = anywhere ? h - bias * bias * h : h + dp(8);
+                vx[i] = AndroidUtilities.dpf2(-0.03f + 0.06f * Utilities.fastRandom.nextFloat());
+                vy[i] = -AndroidUtilities.dpf2(0.045f + 0.09f * r);
+                size[i] = AndroidUtilities.dpf2(1.1f + 2.6f * r);
+                life[i] = 3200 + 4200 * Utilities.fastRandom.nextFloat();
+                ci[i] = Utilities.fastRandom.nextInt(SPARK_COLORS.length);
             }
         }
 
@@ -239,13 +238,23 @@ public class BloodyFx {
                 if (w == 0 || h == 0) {
                     return;
                 }
+                if (mode == BloodyConfig.PARTICLES_SPARKS) {
+                    bottom.setShader(new LinearGradient(0, h, 0, h - h * 0.32f,
+                            new int[]{0xFFFF6A18, 0x22FF4A0A, 0x00000000}, new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
+                }
                 for (int i = 0; i < count; i++) {
-                    spawn(i, now, mode != BloodyConfig.PARTICLES_SPARKS);
+                    spawn(i, now, true);
                 }
                 lastTime = nowMs;
             }
             float dt = Math.min(64, nowMs - lastTime);
             lastTime = nowMs;
+
+            if (mode == BloodyConfig.PARTICLES_SPARKS) {
+                bottom.setAlpha((int) (200 * (0.82f + 0.18f * (float) Math.sin(nowMs / 160.0))));
+                canvas.drawRect(0, h - h * 0.32f, w, h, bottom);
+            }
+
             for (int i = 0; i < count; i++) {
                 float age = now - born[i];
                 if (age < 0) {
@@ -255,23 +264,13 @@ public class BloodyFx {
                     spawn(i, now, false);
                     continue;
                 }
-                float sway = (float) Math.sin(age / 700f + phase[i]) * AndroidUtilities.dpf2(0.012f);
+                float sway = (float) Math.sin(age / 600f + phase[i]) * AndroidUtilities.dpf2(0.02f);
                 x[i] += (vx[i] + sway) * dt;
                 y[i] += vy[i] * dt;
-                if (mode == BloodyConfig.PARTICLES_SPARKS) {
-                    vy[i] += 0.0006f * dt * AndroidUtilities.density; // gravity
-                }
-                float fadeIn = Math.min(1f, age / 600f);
+                float fadeIn = Math.min(1f, age / 500f);
                 float fadeOut = Math.min(1f, (life[i] - age) / 800f);
                 float a = Math.max(0f, Math.min(fadeIn, fadeOut));
-                if (mode == BloodyConfig.PARTICLES_EMBERS) {
-                    float flicker = 0.65f + 0.35f * (float) Math.sin(age / 120f + phase[i] * 3);
-                    paint.setColorFilter(filters[i]);
-                    paint.setAlpha((int) (230 * a * flicker));
-                    float s = size[i] * 4;
-                    rect.set(x[i] - s, y[i] - s, x[i] + s, y[i] + s);
-                    canvas.drawBitmap(glow, null, rect, paint);
-                } else if (mode == BloodyConfig.PARTICLES_ASH) {
+                if (mode == BloodyConfig.PARTICLES_ASH) {
                     paint.setColorFilter(null);
                     paint.setColor(color[i]);
                     paint.setAlpha((int) (150 * a));
@@ -279,11 +278,15 @@ public class BloodyFx {
                     canvas.rotate(age / 20f + phase[i] * 57, x[i], y[i]);
                     canvas.drawRect(x[i] - size[i], y[i] - size[i] * 0.6f, x[i] + size[i], y[i] + size[i] * 0.6f, paint);
                     canvas.restore();
-                } else {
-                    trail.setColor(color[i]);
-                    trail.setAlpha((int) (255 * a));
-                    trail.setStrokeWidth(size[i]);
-                    canvas.drawLine(x[i], y[i], x[i] - vx[i] * 40, y[i] - vy[i] * 40, trail);
+                } else { // sparks
+                    float heightFade = Math.max(0.12f, Math.min(1f, y[i] / (h * 0.85f))); // dimmer higher up
+                    float flicker = 0.6f + 0.4f * (float) Math.sin(age / 130f + phase[i] * 3);
+                    paint.setColorFilter(sparkFilters[ci[i]]);
+                    paint.setAlpha((int) (255 * a * heightFade * flicker));
+                    float sw = size[i] * 2.4f;
+                    float stretch = 1f + Math.min(3.2f, -vy[i] * 26f); // faster embers streak upward
+                    rect.set(x[i] - sw, y[i] - sw * stretch, x[i] + sw, y[i] + sw);
+                    canvas.drawBitmap(glow, null, rect, paint);
                 }
             }
             view.invalidate();

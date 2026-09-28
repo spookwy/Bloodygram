@@ -225,14 +225,18 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
         return BloodyFire.nameColor(getTier(dialogId));
     }
 
-    /** {@code name} painted with {@link #getNameColor}, or unchanged. */
+    /** {@code name} painted with the tier's flame gradient (so it looks on fire), or unchanged. */
     public CharSequence colorName(CharSequence name, long dialogId) {
-        int color = name == null ? 0 : getNameColor(dialogId);
-        if (color == 0 || name.length() == 0) {
+        BloodyConfig.load();
+        if (name == null || name.length() == 0 || !BloodyConfig.streakNameColor || !shouldShow(dialogId)) {
+            return name;
+        }
+        int[] palette = BloodyFire.palette(getTier(dialogId));
+        if (palette == null) {
             return name;
         }
         SpannableStringBuilder sb = new SpannableStringBuilder(name);
-        sb.setSpan(new ForegroundColorSpan(color), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sb.setSpan(new BloodyFire.NameFlame(palette), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return sb;
     }
 

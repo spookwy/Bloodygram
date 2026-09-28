@@ -138,6 +138,7 @@
     <string name="BloodyTranscribeNoFile_ru">Не удалось прочитать голосовое</string>
     <string name="BloodyTranscribeFailed_ru">Не получилось расшифровать</string>
     <string name="BloodyTranscribeNothing_ru">Речь не распознана. Проверь язык голосовых в настройках Bloodygram.</string>
+    <string name="BloodyTranscribeDownloading_ru">Скачивается офлайн-модель голоса… попробуй ещё раз через минуту.</string>
     <string name="BloodyAccountTheme_ru">Тема этого аккаунта</string>
     <string name="BloodyAccountThemeShared_ru">Как везде</string>
     <string name="BloodyAutoDeleteSend_ru">Удалить у всех через…</string>
@@ -161,6 +162,7 @@
     <string name="BloodyEffectEmbers_ru">Угли</string>
     <string name="BloodyEffectAsh_ru">Пепел</string>
     <string name="BloodyEffectSparks_ru">Искры</string>
+    <string name="BloodyEffectFire_ru">Огонь</string>
     <string name="BloodyBubbleRadius_ru">Скругление пузырей</string>
     <string name="BloodyChatEffectInfo_ru">Шрифт применяется к заново открытым чатам.</string>
     <string name="BloodyIntro1Text_ru">Telegram, которого не хватало.\n**Быстрый**, **красивый** и немного **кровавый**.</string>

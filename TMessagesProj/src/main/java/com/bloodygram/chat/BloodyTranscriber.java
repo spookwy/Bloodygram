@@ -68,6 +68,7 @@ public class BloodyTranscriber {
             done.run(null, BloodyStrings.get(R.string.BloodyTranscribeNoRecognizer));
             return;
         }
+        ensureModel();
         withFile(message, file -> {
             if (file == null) {
                 done.run(null, BloodyStrings.get(R.string.BloodyTranscribeNoFile));
@@ -290,7 +291,7 @@ public class BloodyTranscriber {
             }
         });
 
-        boolean onDevice = preferOnDevice && SpeechRecognizer.isOnDeviceRecognitionAvailable(context);
+        boolean onDevice = preferOnDevice; // audio-from-file recognition is only supported by an on-device recognizer
         SpeechRecognizer recognizer = onDevice
                 ? SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
                 : SpeechRecognizer.createSpeechRecognizer(context);
@@ -324,9 +325,12 @@ public class BloodyTranscriber {
 
             @Override
             public void onError(int error) {
-                if (onDevice && parts.isEmpty() && !finished[0]) {
-                    // no on-device language pack (or another local failure): ask for the pack for next time
-                    // and run the same audio through the regular recognizer now
+                if (finished[0]) {
+                    return;
+                }
+                // no on-device language pack yet: start downloading it and ask the user to retry once it is ready
+                if (onDevice && parts.isEmpty()
+                        && (error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE || error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED)) {
                     finished[0] = true;
                     try {
                         recognizer.triggerModelDownload(intentFor(null));
@@ -337,7 +341,7 @@ public class BloodyTranscriber {
                         readSide.close();
                     } catch (Exception ignore) {
                     }
-                    recognize(pcm, done, false);
+                    done.run(null, BloodyStrings.get(R.string.BloodyTranscribeDownloading));
                     return;
                 }
                 finish.run();
@@ -385,6 +389,25 @@ public class BloodyTranscriber {
         if (list != null && !list.isEmpty() && !TextUtils.isEmpty(list.get(0))) {
             parts.add(list.get(0));
         }
+    }
+
+    private static boolean modelRequested;
+
+    /** Kick off the on-device language pack download early, so the first real transcription can succeed. */
+    @RequiresApi(33)
+    private static void ensureModel() {
+        if (modelRequested) {
+            return;
+        }
+        modelRequested = true;
+        AndroidUtilities.runOnUIThread(() -> {
+            try {
+                SpeechRecognizer r = SpeechRecognizer.createOnDeviceSpeechRecognizer(ApplicationLoader.applicationContext);
+                r.triggerModelDownload(intentFor(null));
+                AndroidUtilities.runOnUIThread(r::destroy, 4000);
+            } catch (Exception ignore) {
+            }
+        });
     }
 
     private static String language() {
