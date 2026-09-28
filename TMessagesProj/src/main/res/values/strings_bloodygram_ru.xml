@@ -62,5 +62,7 @@
     <string name="BloodyIdCopied_ru">ID скопирован</string>
     <string name="BloodyStreakNameColor_ru">Цвет имени по огоньку</string>
     <string name="BloodyChatSnow_ru">Снег в чатах</string>
+    <string name="BloodyTypingAnimation_ru">Плавный набор текста</string>
+    <string name="BloodyEraseDust_ru">Стёртые буквы рассыпаются</string>
     <string name="BloodyAppearanceInfo_ru">Имя окрашивается в цвет своего огонька: оранжевый, 100+ красный, 200+ фиолетовый, 300+ синий, 500+ зелёный.</string>
 </resources>

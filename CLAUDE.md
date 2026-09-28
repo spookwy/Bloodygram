@@ -29,8 +29,8 @@
 - Подпись: `TMessagesProj/config/release.keystore` + пароли в `gradle.properties` — пока dummy из апстрима; для релиза заменить на свои.
 - `google-services.json` во всех модулях — заглушки (placeholder-проект). Пуши через FCM не работают, пока не заведём свой Firebase-проект.
 - Сборка debug для установки на телефон: `./gradlew :TMessagesProj_App:assembleAfatDebug`
-  APK: `TMessagesProj_App/build/outputs/apk/afat/debug/app.apk`, пакет `com.epicgram.messenger.beta`.
-- **`applicationId` пока старый — `com.epicgram.messenger`** (`APP_PACKAGE` в `gradle.properties`). Смена = новое приложение: перелогин, потеря локальных данных на телефоне. Менять только с согласия пользователя (вместе с run.ps1).
+  APK: `TMessagesProj_App/build/outputs/apk/afat/debug/app.apk`, пакет `com.bloodygram.messenger.beta`.
+- `applicationId` = `com.bloodygram.messenger` (`APP_PACKAGE` в `gradle.properties`, заглушки `google-services.json`, run.ps1) — сменили 28.09.2026 с `com.epicgram.messenger`. После смены в эмуляторе нужен новый вход; старое приложение `com.epicgram.messenger.beta` ещё установлено рядом.
 - Быстрая проверка компиляции (только arm64): добавить `-Pandroid.injected.build.abi=arm64-v8a`. **Такой APK помечен `testOnly=true`** и ставится только через `adb install -t`, файлом на телефон — «пакет недействителен». Лежит в `build/intermediates/apk/...`.
 - Подпись debug сейчас — dummy `release.keystore` из апстрима (публичный ключ, Play Protect ругается). Перед раздачей людям — свой keystore, иначе потом придётся переустанавливать с потерей данных.
 - Модули: `TMessagesProj` — весь код клиента (library); `TMessagesProj_App` — обёртка-приложение, которую собираем. Остальные `TMessagesProj_App*` (Huawei, HockeyApp, Standalone, Tests) не трогаем.
@@ -68,6 +68,7 @@
 - `com.bloodygram.ui.BloodyProfile` — строка «ID» в профиле (как AyuGram): `bloodyIdRow` в `ProfileActivity` после `usernameRow` (для людей) и в блоке инфо чатов/каналов (блок показывается и без описания, если включён ID); id в стиле Bot API (`-100…` для каналов/супергрупп, `-…` для обычных групп); тап копирует. Настройка `showPeerId`.
 - `com.bloodygram.BloodyTheme` — имя ассета темы, `isStaleCopy`.
 - `com.bloodygram.keepalive.BloodyKeepAliveService` — foreground-сервис (`remoteMessaging`) вместо FCM: хук в `ApplicationLoader.startPushService()`, включает `pushConnection`. Без него закрытое приложение не получает апдейты → удалённые не сохраняются.
+- `com.bloodygram.ui.BloodyTypingEffects` — эффекты поля ввода (хук `attach(messageEditText)` в `ChatActivityEnterView.createMessageEditText`): набранные буквы (≤3 за раз, не вставка/черновик) проявляются и всплывают за 220 мс — `AppearSpan` (CharacterStyle: alpha + `baselineShift`), на время анимации у поля `LAYER_TYPE_SOFTWARE`, иначе TextView кэширует блоки текста в display list и span не перерисовывается. Стёртые буквы (≤16, не очистка всего поля) — снимок из `Layout` → частицы `Dust` в `rootView.getOverlay()`, разлёт вправо-вверх с волной слева направо. Композиция клавиатуры учитывается по общему префиксу старого/нового текста. Настройки `typingAnimation`, `eraseDust` (+ Lite Mode `FLAG_PARTICLES`).
 - **Снег в чатах:** `SizeNotifierFrameLayout.checkSnowflake` + `SnowflakesEffect.onDraw` — рисуется при празднике Telegram или при `BloodyConfig.isChatSnowAllowed()` (настройка `chatSnow` + Lite Mode `FLAG_PARTICLES`, который есть во всех пресетах; праздничный снег Telegram требует `FLAG_CHAT_BACKGROUND` — только «высокий» пресет). Добавлен вызов и для градиентных обоев без паттерна.
 - **Тема «Bloodygram»:** `assets/bloodygram.attheme` генерируется `node Tools/bloodygram/make_theme.js` из `night.attheme`. Исходящие пузыри — градиент `chat_outBubble` (красный) → `chat_outBubbleGradient/2/3` (тёмно-красный → почти чёрный), `chat_outBubbleGradientAnimated=1`: градиент привязан к экрану, вверху пузыри тёмные, внизу красные, «переливаются» при скролле. В `Theme.java` тема зарегистрирована как «Bloodygram» + алиас «Epicgram» (старое имя в сохранённых настройках); флаг `bloodyThemeDefaultApplied`.
 - Стиль кода — как в Telegram: Java, без лишних абстракций, `AndroidUtilities.dp()`, `Theme.getColor()`.
@@ -87,7 +88,6 @@
 
 # Следующие задачи
 
-- Решить с пользователем смену `applicationId` на `com.bloodygram.messenger` (перелогин, потеря данных на телефоне) — и заодно своя иконка.
 - Своя иконка (не бумажный самолётик) — сейчас в UI остались логотипы Telegram (напр. `telegram_logo_2` в `DialogStoriesCell`).
 - Проверить удалённые сообщения после повторного открытия чата (см. Этап 1).
 
@@ -103,7 +103,7 @@
 - [x] Ключи через `local.properties` → `BuildConfig`
 - [x] `applicationId` → `com.epicgram.messenger`, `AppName` → «Bloodygram» во всех локалях
 - [x] Переименование Epicgram → Bloodygram (пакет `com.bloodygram`, классы `Bloody*`, строки, хуки `// Bloodygram`, заголовок списка чатов)
-- [ ] `applicationId` → `com.bloodygram.messenger` (по согласию пользователя)
+- [x] `applicationId` → `com.bloodygram.messenger`
 - [ ] Своя иконка (не бумажный самолётик)
 - [x] Firebase-конфиги → заглушки; выключены `CHECK_UPDATES`, `SUPPORTS_PASSKEYS`, `SAFETYNET_KEY`
 - [ ] Проверить остальные «официальные» вещи: Google Auth client id, биллинг/Stars, ссылки на Play Store
@@ -147,6 +147,8 @@
 - [x] Градиентные красно-чёрные исходящие, переливаются при скролле
 - [x] Падающий снег на фоне чата (тумблер «Снег в чатах»)
 - [x] ID собеседника/чата в профиле (тумблер)
+- [x] Чёрные кнопки голосовых в исходящих (`chat_outLoader`)
+- [x] Плавный набор текста и рассыпание стёртых букв
 - [ ] Пройтись по остальным экранам (настройки, профиль, медиа), подправить `OVERRIDES`
 - [ ] Более плавный скролл / переходы между экранами, отключаемые «тяжёлые» эффекты для слабых телефонов
 - [ ] Свой шрифт (опционально)

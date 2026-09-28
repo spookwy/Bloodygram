@@ -34,7 +34,9 @@ const OVERRIDES = {
     chats_onlineCircle: 0xFFE0243C,
     featuredStickers_addButton: 0xFFE0243C,
     featuredStickers_addButtonPressed: 0xFFB81C31,
-    chat_outLoader: 0xFFE0243C,
+    // voice/file buttons in outgoing bubbles: black circle, the icon is cut out and shows the red bubble
+    chat_outLoader: 0xFF0B0B0C,
+    chat_outLoaderSelected: 0xFF1C1C1E,
     chat_messagePanelSend: 0xFFFF3B55,
 };
 

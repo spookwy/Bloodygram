@@ -38,6 +38,8 @@ public class BloodySettingsActivity extends UniversalFragment {
     private static final int ID_SHOW_PEER_ID = 11;
     private static final int ID_STREAK_NAME_COLOR = 12;
     private static final int ID_CHAT_SNOW = 13;
+    private static final int ID_TYPING_ANIMATION = 14;
+    private static final int ID_ERASE_DUST = 15;
 
     private static final int[] STREAK_MIN_DAYS = {0, 1, 2, 3, 5, 7, 10, 30, 100};
 
@@ -59,6 +61,8 @@ public class BloodySettingsActivity extends UniversalFragment {
         items.add(UItem.asCheck(ID_SHOW_PEER_ID, BloodyStrings.get(R.string.BloodyShowPeerId)).setChecked(BloodyConfig.showPeerId));
         items.add(UItem.asCheck(ID_STREAK_NAME_COLOR, BloodyStrings.get(R.string.BloodyStreakNameColor)).setChecked(BloodyConfig.streakNameColor));
         items.add(UItem.asCheck(ID_CHAT_SNOW, BloodyStrings.get(R.string.BloodyChatSnow)).setChecked(BloodyConfig.chatSnow));
+        items.add(UItem.asCheck(ID_TYPING_ANIMATION, BloodyStrings.get(R.string.BloodyTypingAnimation)).setChecked(BloodyConfig.typingAnimation));
+        items.add(UItem.asCheck(ID_ERASE_DUST, BloodyStrings.get(R.string.BloodyEraseDust)).setChecked(BloodyConfig.eraseDust));
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyAppearanceInfo)));
 
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyBackground)));
@@ -150,6 +154,12 @@ public class BloodySettingsActivity extends UniversalFragment {
             refreshDialogs();
         } else if (item.id == ID_CHAT_SNOW) {
             BloodyConfig.setChatSnow(!BloodyConfig.chatSnow);
+            listView.adapter.update(true);
+        } else if (item.id == ID_TYPING_ANIMATION) {
+            BloodyConfig.setTypingAnimation(!BloodyConfig.typingAnimation);
+            listView.adapter.update(true);
+        } else if (item.id == ID_ERASE_DUST) {
+            BloodyConfig.setEraseDust(!BloodyConfig.eraseDust);
             listView.adapter.update(true);
         } else if (item.id == ID_STREAK_RECALC) {
             BloodyStreaks.getInstance(currentAccount).recalcAll();

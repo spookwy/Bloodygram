@@ -64,5 +64,7 @@
     <string name="BloodyIdCopied">ID copied to clipboard</string>
     <string name="BloodyStreakNameColor">Color chat names by streak</string>
     <string name="BloodyChatSnow">Snow in chats</string>
+    <string name="BloodyTypingAnimation">Smooth typing</string>
+    <string name="BloodyEraseDust">Erased letters turn to dust</string>
     <string name="BloodyAppearanceInfo">Names get the color of their fire: orange, 100+ red, 200+ purple, 300+ blue, 500+ green.</string>
 </resources>

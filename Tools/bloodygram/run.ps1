@@ -35,5 +35,5 @@ if (-not $devices) {
 }
 
 & $adb install -r -t "TMessagesProj_App\build\intermediates\apk\afat\debug\app.apk"
-& $adb shell monkey -p com.epicgram.messenger.beta -c android.intent.category.LAUNCHER 1 | Out-Null
+& $adb shell monkey -p com.bloodygram.messenger.beta -c android.intent.category.LAUNCHER 1 | Out-Null
 Write-Host "Bloodygram is running in the emulator"

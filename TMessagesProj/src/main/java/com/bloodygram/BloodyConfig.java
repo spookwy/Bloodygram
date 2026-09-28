@@ -21,6 +21,8 @@ public class BloodyConfig {
     public static boolean showPeerId;
     public static boolean streakNameColor;
     public static boolean chatSnow;
+    public static boolean typingAnimation;
+    public static boolean eraseDust;
     /** Unix time when counting of deleted messages started (shown in the stats window). */
     public static int deletedSince;
 
@@ -47,6 +49,8 @@ public class BloodyConfig {
             showPeerId = prefs.getBoolean("showPeerId", true);
             streakNameColor = prefs.getBoolean("streakNameColor", true);
             chatSnow = prefs.getBoolean("chatSnow", true);
+            typingAnimation = prefs.getBoolean("typingAnimation", true);
+            eraseDust = prefs.getBoolean("eraseDust", true);
             deletedSince = prefs.getInt("deletedSince", 0);
             if (deletedSince == 0) {
                 deletedSince = (int) (System.currentTimeMillis() / 1000);
@@ -114,6 +118,14 @@ public class BloodyConfig {
 
     public static void setChatSnow(boolean value) {
         putBoolean("chatSnow", chatSnow = value);
+    }
+
+    public static void setTypingAnimation(boolean value) {
+        putBoolean("typingAnimation", typingAnimation = value);
+    }
+
+    public static void setEraseDust(boolean value) {
+        putBoolean("eraseDust", eraseDust = value);
     }
 
     private static void putBoolean(String key, boolean value) {
