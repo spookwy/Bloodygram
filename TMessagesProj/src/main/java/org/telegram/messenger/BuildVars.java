@@ -22,15 +22,15 @@ public class BuildVars {
     public static boolean LOGS_ENABLED = BuildConfig.DEBUG_VERSION;
     public static boolean DEBUG_PRIVATE_VERSION = BuildConfig.DEBUG_PRIVATE_VERSION;
     public static boolean USE_CLOUD_STRINGS = true;
-    public static boolean CHECK_UPDATES = false; // Epicgram: Telegram updates would replace our build
+    public static boolean CHECK_UPDATES = false; // Bloodygram: Telegram updates would replace our build
     public static boolean NO_SCOPED_STORAGE = Build.VERSION.SDK_INT <= 29;
     public static String BUILD_VERSION_STRING = BuildConfig.BUILD_VERSION_STRING;
 
-    public static int APP_ID = BuildConfig.EPIC_APP_ID; // Epicgram: from local.properties
-    public static String APP_HASH = BuildConfig.EPIC_APP_HASH; // Epicgram: from local.properties
+    public static int APP_ID = BuildConfig.BLOODY_APP_ID; // Bloodygram: from local.properties
+    public static String APP_HASH = BuildConfig.BLOODY_APP_HASH; // Bloodygram: from local.properties
 
     // SafetyNet key for Google Identity SDK, set it to empty to disable
-    public static String SAFETYNET_KEY = ""; // Epicgram: official key works only for official app
+    public static String SAFETYNET_KEY = ""; // Bloodygram: official key works only for official app
     public static String PLAYSTORE_APP_URL = "https://play.google.com/store/apps/details?id=org.telegram.messenger";
     public static String HUAWEI_STORE_URL = "https://appgallery.huawei.com/app/C101184875";
     public static String GOOGLE_AUTH_CLIENT_ID = "760348033671-81kmi3pi84p11ub8hp9a1funsv0rn2p9.apps.googleusercontent.com";
@@ -41,7 +41,7 @@ public class BuildVars {
     public static boolean IS_BILLING_UNAVAILABLE = false;
 
     // works only on official app ids, disable on your forks
-    public static boolean SUPPORTS_PASSKEYS = false; // Epicgram
+    public static boolean SUPPORTS_PASSKEYS = false; // Bloodygram
 
     static {
         if (ApplicationLoader.applicationContext != null) {

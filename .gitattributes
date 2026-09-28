@@ -1,2 +1,2 @@
-# Epicgram: keep upstream LF endings (Theme parser breaks on CRLF in .attheme)
+# Bloodygram: keep upstream LF endings (Theme parser breaks on CRLF in .attheme)
 * -text

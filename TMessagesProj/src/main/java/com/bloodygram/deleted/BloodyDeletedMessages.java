@@ -1,11 +1,11 @@
-package com.epicgram.deleted;
+package com.bloodygram.deleted;
 
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import com.epicgram.EpicConfig;
+import com.bloodygram.BloodyConfig;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -25,19 +25,19 @@ import java.util.concurrent.ConcurrentHashMap;
  * Message ids are unique per account for private chats and basic groups (key 0)
  * and per channel for channels/supergroups (key = channel_id).
  */
-public class EpicDeletedMessages {
+public class BloodyDeletedMessages {
 
-    private static final EpicDeletedMessages[] instances = new EpicDeletedMessages[UserConfig.MAX_ACCOUNT_COUNT];
-    private static final DispatchQueue queue = new DispatchQueue("epicDeletedQueue");
+    private static final BloodyDeletedMessages[] instances = new BloodyDeletedMessages[UserConfig.MAX_ACCOUNT_COUNT];
+    private static final DispatchQueue queue = new DispatchQueue("bloodyDeletedQueue");
 
-    public static EpicDeletedMessages getInstance(int account) {
+    public static BloodyDeletedMessages getInstance(int account) {
         long userId = UserConfig.getInstance(account).getClientUserId();
-        EpicDeletedMessages instance = instances[account];
+        BloodyDeletedMessages instance = instances[account];
         if (instance == null || instance.userId != userId) {
-            synchronized (EpicDeletedMessages.class) {
+            synchronized (BloodyDeletedMessages.class) {
                 instance = instances[account];
                 if (instance == null || instance.userId != userId) {
-                    instances[account] = instance = new EpicDeletedMessages(account, userId);
+                    instances[account] = instance = new BloodyDeletedMessages(account, userId);
                 }
             }
         }
@@ -49,7 +49,7 @@ public class EpicDeletedMessages {
     private final ConcurrentHashMap<Long, Set<Integer>> deleted = new ConcurrentHashMap<>();
     private DbHelper db;
 
-    private EpicDeletedMessages(int account, long userId) {
+    private BloodyDeletedMessages(int account, long userId) {
         this.account = account;
         this.userId = userId;
         if (userId != 0) {
@@ -64,10 +64,10 @@ public class EpicDeletedMessages {
      */
     public boolean interceptDelete(long channelId, ArrayList<Integer> ids) {
         if (channelId == 0) {
-            com.epicgram.streaks.EpicStreaks.getInstance(account).onRemoteDelete(ids);
+            com.bloodygram.streaks.BloodyStreaks.getInstance(account).onRemoteDelete(ids);
         }
-        EpicConfig.load();
-        if (!EpicConfig.saveDeletedMessages || userId == 0 || ids == null || ids.isEmpty()) {
+        BloodyConfig.load();
+        if (!BloodyConfig.saveDeletedMessages || userId == 0 || ids == null || ids.isEmpty()) {
             return false;
         }
         ArrayList<Integer> copy = new ArrayList<>(ids);
@@ -94,7 +94,7 @@ public class EpicDeletedMessages {
                 FileLog.e(e);
             }
         });
-        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.epicMessagesMarkedDeleted, channelId, copy));
+        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.bloodyMessagesMarkedDeleted, channelId, copy));
         return true;
     }
 
@@ -127,7 +127,7 @@ public class EpicDeletedMessages {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.epicMessagesMarkedDeleted, 0L, null));
+        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.bloodyMessagesMarkedDeleted, 0L, null));
     }
 
     private DbHelper db() {

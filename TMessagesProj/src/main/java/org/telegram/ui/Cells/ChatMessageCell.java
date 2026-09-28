@@ -18523,11 +18523,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 currentTimeString = TextUtils.concat(formatString(R.string.MessageScheduledRepeatSeconds, period), ", ", currentTimeString);
             }
         }
-        // Epicgram start: deleted message mark next to time
-        if (currentTimeString != null && com.epicgram.deleted.EpicDeletedMessages.getInstance(currentAccount).isDeleted(messageObject)) {
-            currentTimeString = TextUtils.concat(com.epicgram.EpicStrings.get(R.string.EpicDeletedMark), " ", currentTimeString);
+        // Bloodygram start: deleted message mark next to time
+        if (currentTimeString != null && com.bloodygram.deleted.BloodyDeletedMessages.getInstance(currentAccount).isDeleted(messageObject)) {
+            currentTimeString = TextUtils.concat(com.bloodygram.BloodyStrings.get(R.string.BloodyDeletedMark), " ", currentTimeString);
         }
-        // Epicgram end
+        // Bloodygram end
         timeTextWidth = timeWidth = (int) Math.ceil(Theme.chat_timePaint.measureText(currentTimeString, 0, currentTimeString == null ? 0 : currentTimeString.length()));
         if (currentMessageObject.scheduled && currentMessageObject.messageOwner.date == 0x7FFFFFFE || currentMessageObject.notime) {
             timeWidth -= dp(8);

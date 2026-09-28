@@ -1,12 +1,12 @@
-// Generates TMessagesProj/src/main/assets/epicgram.attheme (black-red Epicgram theme)
+// Generates TMessagesProj/src/main/assets/bloodygram.attheme (black-red Bloodygram theme)
 // from Telegram's night.attheme: blues/purples -> red, bluish dark grays -> neutral black.
-// Run: node Tools/epicgram/make_theme.js
+// Run: node Tools/bloodygram/make_theme.js
 const fs = require('fs');
 const path = require('path');
 
 const root = path.join(__dirname, '..', '..');
 const src = path.join(root, 'TMessagesProj/src/main/assets/night.attheme');
-const dst = path.join(root, 'TMessagesProj/src/main/assets/epicgram.attheme');
+const dst = path.join(root, 'TMessagesProj/src/main/assets/bloodygram.attheme');
 
 const RED_HUE = 356;
 
@@ -19,8 +19,12 @@ const OVERRIDES = {
     actionBarWhiteSelector: 0x2FFFFFFF,
     chat_wallpaper: 0xFF050303,
     chat_inBubble: 0xFF1C1B1D,
-    chat_outBubble: 0xFF8E1B2B,
-    chat_outBubbleGradient: 0xFFB0213A,
+    // outgoing bubbles: screen-anchored red -> dark red -> almost black gradient, shifts while scrolling
+    chat_outBubble: 0xFFE01E38,
+    chat_outBubbleGradient: 0xFF9A1026,
+    chat_outBubbleGradient2: 0xFF480812,
+    chat_outBubbleGradient3: 0xFF180206,
+    chat_outBubbleGradientAnimated: 1,
     chat_outBubbleSelected: 0xFFA5263A,
     chat_inBubbleSelected: 0xFF2A282B,
     chat_messagePanelBackground: 0xFF0E0E0F,

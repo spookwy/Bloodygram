@@ -1,4 +1,4 @@
-package com.epicgram.streaks;
+package com.bloodygram.streaks;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  * Vector streak fire (paths from fire-svgrepo-com.svg, same look as the "Огонёк" plugin)
  * and the " 🔥N" suffix: fire image + smaller light number.
  */
-public class EpicFire {
+public class BloodyFire {
 
     public static final int TIER_GRAY = 0;
     public static final int TIER_ORANGE = 1;
@@ -91,6 +91,11 @@ public class EpicFire {
             return TIER_RED;
         }
         return TIER_ORANGE;
+    }
+
+    /** Chat name color for the tier (middle of the flame), 0 = don't color (gray). */
+    public static int nameColor(int tier) {
+        return tier <= TIER_GRAY || tier >= TIER_COLORS.length ? 0 : TIER_COLORS[tier][2];
     }
 
     public static class Suffix {

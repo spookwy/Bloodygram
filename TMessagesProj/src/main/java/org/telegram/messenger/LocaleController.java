@@ -4442,6 +4442,9 @@ public class LocaleController {
 
     @Nullable
     private String getStringV2(String key, @StringRes int stringRes, String fallback) {
+        if (stringRes == R.string.AppName || "AppName".equals(key)) { // Bloodygram: the cloud string says "Telegram"
+            return com.bloodygram.BloodyStrings.APP_NAME;
+        }
         final Context context = ApplicationLoader.applicationContext;
         String value;
 

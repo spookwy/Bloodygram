@@ -2923,7 +2923,7 @@ public class ChatActivity extends BaseFragment implements
             .add(NotificationCenter.didLoadSendAsPeers)
             .add(NotificationCenter.closeChatActivity)
             .add(NotificationCenter.messagesDeleted)
-            .add(NotificationCenter.epicMessagesMarkedDeleted) // Epicgram
+            .add(NotificationCenter.bloodyMessagesMarkedDeleted) // Bloodygram
             .add(NotificationCenter.historyCleared)
             .add(NotificationCenter.messageReceivedByServer)
             .add(NotificationCenter.messageReceivedByAck)
@@ -3689,8 +3689,8 @@ public class ChatActivity extends BaseFragment implements
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(final int id) {
-                if (id == com.epicgram.streaks.EpicStreakUi.MENU_ID) { // Epicgram
-                    com.epicgram.streaks.EpicStreakUi.showStats(ChatActivity.this, currentAccount, dialog_id);
+                if (id == com.bloodygram.streaks.BloodyStreakUi.MENU_ID) { // Bloodygram
+                    com.bloodygram.streaks.BloodyStreakUi.showStats(ChatActivity.this, currentAccount, dialog_id);
                     return;
                 }
                 if (id == -1) {
@@ -4412,7 +4412,7 @@ public class ChatActivity extends BaseFragment implements
                     headerItem.hideSubItem(video_call);
                 }
                 if (chatMode == 0) {
-                    com.epicgram.streaks.EpicStreakUi.addMenuItem(headerItem, currentAccount, dialog_id, true); // Epicgram
+                    com.bloodygram.streaks.BloodyStreakUi.addMenuItem(headerItem, currentAccount, dialog_id, true); // Bloodygram
                 }
             }
 
@@ -22272,9 +22272,9 @@ public class ChatActivity extends BaseFragment implements
             if (updated && chatAdapter != null) {
                 chatAdapter.notifyDataSetChanged(false);
             }
-        } else if (id == NotificationCenter.epicMessagesMarkedDeleted) { // Epicgram
-            final com.epicgram.deleted.EpicDeletedMessages epicDeleted = com.epicgram.deleted.EpicDeletedMessages.getInstance(currentAccount);
-            updateVisibleRows(messageObject -> messageObject != null && epicDeleted.isDeleted(messageObject));
+        } else if (id == NotificationCenter.bloodyMessagesMarkedDeleted) { // Bloodygram
+            final com.bloodygram.deleted.BloodyDeletedMessages bloodyDeleted = com.bloodygram.deleted.BloodyDeletedMessages.getInstance(currentAccount);
+            updateVisibleRows(messageObject -> messageObject != null && bloodyDeleted.isDeleted(messageObject));
         } else if (id == NotificationCenter.messagesDeleted) {
             boolean scheduled = (Boolean) args[2];
             if (scheduled != (chatMode == MODE_SCHEDULED)) {
@@ -33788,8 +33788,8 @@ public class ChatActivity extends BaseFragment implements
                 chatActivityEnterView.addRecentGif(document);
                 break;
             }
-            case com.epicgram.history.EpicEditHistory.OPTION_EDIT_HISTORY: { // Epicgram
-                com.epicgram.history.EpicEditHistory.getInstance(currentAccount).show(this, selectedObject);
+            case com.bloodygram.history.BloodyEditHistory.OPTION_EDIT_HISTORY: { // Bloodygram
+                com.bloodygram.history.BloodyEditHistory.getInstance(currentAccount).show(this, selectedObject);
                 break;
             }
             case OPTION_SUGGESTION_EDIT_MESSAGE:
@@ -45838,7 +45838,7 @@ public class ChatActivity extends BaseFragment implements
                     options.add(OPTION_TRANSLATE);
                     icons.add(R.drawable.msg_translate);
                 }
-                com.epicgram.history.EpicEditHistory.addMenuItem(currentAccount, selectedObject, items, options, icons); // Epicgram
+                com.bloodygram.history.BloodyEditHistory.addMenuItem(currentAccount, selectedObject, items, options, icons); // Bloodygram
                 if (message.canEditMessage(currentChat) && message.type != MessageObject.TYPE_POLL || chatMode == MODE_WELCOME_MESSAGES) {
                     items.add(LocaleController.getString(R.string.Edit));
                     options.add(OPTION_EDIT);
@@ -46186,7 +46186,7 @@ public class ChatActivity extends BaseFragment implements
                     options.add(OPTION_TRANSLATE);
                     icons.add(R.drawable.msg_translate);
                 }
-                com.epicgram.history.EpicEditHistory.addMenuItem(currentAccount, selectedObject, items, options, icons); // Epicgram
+                com.bloodygram.history.BloodyEditHistory.addMenuItem(currentAccount, selectedObject, items, options, icons); // Bloodygram
                 if (allowEdit || chatMode == MODE_WELCOME_MESSAGES) {
                     items.add(LocaleController.getString(R.string.Edit));
                     options.add(OPTION_EDIT);

@@ -1,6 +1,9 @@
-package com.epicgram;
+package com.bloodygram;
 
 import android.content.res.Resources;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.util.SparseIntArray;
 
 import androidx.annotation.StringRes;
@@ -11,13 +14,22 @@ import org.telegram.messenger.LocaleController;
 import java.util.Locale;
 
 /**
- * Epicgram strings. The app module keeps only default-locale resources ({@code localeFilters "zz"}),
- * so translations live in values/strings_epicgram_ru.xml as {@code <name>_ru} and are picked
+ * Bloodygram strings. The app module keeps only default-locale resources ({@code localeFilters "zz"}),
+ * so translations live in values/strings_bloodygram_ru.xml as {@code <name>_ru} and are picked
  * by the in-app Telegram language.
  */
-public class EpicStrings {
+public class BloodyStrings {
+
+    public static final String APP_NAME = "Bloodygram";
 
     private static final SparseIntArray ruIds = new SparseIntArray();
+
+    /** "Bloodygram" title over the chats list, "Bloody" in red. */
+    public static CharSequence appTitle() {
+        SpannableStringBuilder title = new SpannableStringBuilder(APP_NAME);
+        title.setSpan(new ForegroundColorSpan(0xFFE0243C), 0, "Bloody".length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return title;
+    }
 
     public static String get(@StringRes int res) {
         Resources resources = ApplicationLoader.applicationContext.getResources();

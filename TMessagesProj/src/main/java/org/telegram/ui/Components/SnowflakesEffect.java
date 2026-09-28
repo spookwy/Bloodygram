@@ -162,7 +162,7 @@ public class SnowflakesEffect {
     }
 
     public void onDraw(View parent, Canvas canvas) {
-        if (parent == null || canvas == null || !LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+        if (parent == null || canvas == null || !LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND) && !com.bloodygram.BloodyConfig.isChatSnowAllowed()) { // Bloodygram: isChatSnowAllowed
             return;
         }
 

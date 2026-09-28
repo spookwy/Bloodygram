@@ -2385,12 +2385,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             if (nameString instanceof String) {
                 nameString = ((String) nameString).replace('\n', ' ');
             }
-            // Epicgram start: streak fire after the name, the name is ellipsized first
-            com.epicgram.streaks.EpicFire.Suffix epicFire = user != null && customDialog == null && !twoLinesForName ? com.epicgram.streaks.EpicStreakUi.listSuffix(currentAccount, currentDialogId, Theme.dialogs_namePaint[paintIndex]) : null;
-            if (epicFire != null) {
-                ellipsizeWidth = Math.max(0, ellipsizeWidth - epicFire.width);
+            // Bloodygram start: streak fire after the name, the name is ellipsized first
+            com.bloodygram.streaks.BloodyFire.Suffix bloodyFire = user != null && customDialog == null && !twoLinesForName ? com.bloodygram.streaks.BloodyStreakUi.listSuffix(currentAccount, currentDialogId, Theme.dialogs_namePaint[paintIndex]) : null;
+            if (bloodyFire != null) {
+                ellipsizeWidth = Math.max(0, ellipsizeWidth - bloodyFire.width);
             }
-            // Epicgram end
+            // Bloodygram end
             CharSequence nameStringFinal = nameString;
             if (nameLayoutEllipsizeByGradient) {
                 nameLayoutFits = nameStringFinal.length() == TextUtils.ellipsize(nameStringFinal, Theme.dialogs_namePaint[paintIndex], ellipsizeWidth, TextUtils.TruncateAt.END).length();
@@ -2404,9 +2404,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 nameStringFinal = TextUtils.ellipsize(nameStringFinal, Theme.dialogs_namePaint[paintIndex], ellipsizeWidth, TextUtils.TruncateAt.END);
             }
             nameStringFinal = Emoji.replaceEmoji(nameStringFinal, Theme.dialogs_namePaint[paintIndex].getFontMetricsInt(), false);
-            if (epicFire != null) { // Epicgram
-                nameStringFinal = TextUtils.concat(nameStringFinal, epicFire.text);
-                ellipsizeWidth += epicFire.width;
+            if (user != null && customDialog == null) { // Bloodygram
+                nameStringFinal = com.bloodygram.streaks.BloodyStreakUi.listName(currentAccount, currentDialogId, nameStringFinal);
+            }
+            if (bloodyFire != null) { // Bloodygram
+                nameStringFinal = TextUtils.concat(nameStringFinal, bloodyFire.text);
+                ellipsizeWidth += bloodyFire.width;
             }
             if (message != null && message.hasHighlightedWords()) {
                 CharSequence s = AndroidUtilities.highlightText(nameStringFinal, message.highlightedWords, resourcesProvider);
@@ -6180,6 +6183,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         public int lastTopicsCount;
         public boolean lastDrawnPinned;
         public boolean lastDrawnHasCall;
+        public int lastDrawnBloodyFire; // Bloodygram
 
 
         public float typingProgres;
@@ -6247,7 +6251,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             int draftHash = draftMessage == null ? 0 : draftMessage.message.hashCode() + (draftMessage.reply_to != null ? (draftMessage.reply_to.reply_to_msg_id << 16) : 0);
             boolean hasCall = chat != null && chat.call_active && chat.call_not_empty;
             boolean translated = MessagesController.getInstance(currentAccount).getTranslateController().isTranslatingDialog(currentDialogId);
+            int bloodyFire = user != null && customDialog == null ? com.bloodygram.streaks.BloodyStreakUi.listHash(currentAccount, currentDialogId) : 0; // Bloodygram
             if (lastDrawnSizeHash == sizeHash &&
+                    lastDrawnBloodyFire == bloodyFire && // Bloodygram
                     lastDrawnMessageId == messageHash &&
                     lastDrawnTranslated == translated &&
                     lastDrawnDialogId == currentDialogId &&
@@ -6292,6 +6298,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             lastDrawnDraftHash = draftHash;
             lastTopicsCount = topicCount;
             lastDrawnPinned = drawPin;
+            lastDrawnBloodyFire = bloodyFire; // Bloodygram
             lastDrawnHasCall = hasCall;
             lastDrawnTranslated = translated;
 

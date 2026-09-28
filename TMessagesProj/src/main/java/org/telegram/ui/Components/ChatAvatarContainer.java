@@ -455,20 +455,20 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     }
 
     public boolean ignoreTouches;
-    private com.epicgram.streaks.EpicStreakUi.HeaderTouch epicHeaderTouch; // Epicgram
+    private com.bloodygram.streaks.BloodyStreakUi.HeaderTouch bloodyHeaderTouch; // Bloodygram
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         if (ignoreTouches) return false;
-        // Epicgram start: tap on the streak fire opens the stats window
+        // Bloodygram start: tap on the streak fire opens the stats window
         if (parentFragment != null && parentFragment.getChatMode() == 0 && parentFragment.getCurrentUser() != null) {
-            if (epicHeaderTouch == null) {
-                epicHeaderTouch = new com.epicgram.streaks.EpicStreakUi.HeaderTouch();
+            if (bloodyHeaderTouch == null) {
+                bloodyHeaderTouch = new com.bloodygram.streaks.BloodyStreakUi.HeaderTouch();
             }
-            if (epicHeaderTouch.onTouch(ev, titleTextView, currentAccount, parentFragment.getDialogId(), parentFragment)) {
+            if (bloodyHeaderTouch.onTouch(ev, titleTextView, currentAccount, parentFragment.getDialogId(), parentFragment)) {
                 return true;
             }
         }
-        // Epicgram end
+        // Bloodygram end
         return super.dispatchTouchEvent(ev);
     }
 
@@ -950,8 +950,8 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     public void setTitle(CharSequence value, boolean scam, boolean fake, boolean verified, boolean premium, TLRPC.EmojiStatus emojiStatus, boolean animated) {
         if (value != null) {
             value = Emoji.replaceEmoji(value, titleTextView.getPaint().getFontMetricsInt(), false);
-            if (parentFragment != null && parentFragment.getChatMode() == 0 && parentFragment.getCurrentUser() != null) { // Epicgram
-                value = com.epicgram.streaks.EpicStreakUi.headerTitle(currentAccount, value, parentFragment.getDialogId(), titleTextView.getPaint());
+            if (parentFragment != null && parentFragment.getChatMode() == 0 && parentFragment.getCurrentUser() != null) { // Bloodygram
+                value = com.bloodygram.streaks.BloodyStreakUi.headerTitle(currentAccount, value, parentFragment.getDialogId(), titleTextView.getPaint());
             }
         }
         titleTextView.setText(value);

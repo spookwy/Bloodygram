@@ -147,15 +147,15 @@ android {
 
         multiDexEnabled true
 
-        // Epicgram start: own api_id / api_hash from local.properties (never commit real keys)
-        def epicAppId = getProps("EPIC_APP_ID")
-        def epicAppHash = getProps("EPIC_APP_HASH")
-        if (!epicAppId || !epicAppHash) {
-            logger.warn("Epicgram: EPIC_APP_ID / EPIC_APP_HASH are not set in local.properties, login will not work")
+        // Bloodygram start: own api_id / api_hash from local.properties (never commit real keys)
+        def bloodyAppId = getProps("BLOODY_APP_ID")
+        def bloodyAppHash = getProps("BLOODY_APP_HASH")
+        if (!bloodyAppId || !bloodyAppHash) {
+            logger.warn("Bloodygram: BLOODY_APP_ID / BLOODY_APP_HASH are not set in local.properties, login will not work")
         }
-        buildConfigField "int", "EPIC_APP_ID", epicAppId ?: "0"
-        buildConfigField "String", "EPIC_APP_HASH", "\"" + (epicAppHash ?: "") + "\""
-        // Epicgram end
+        buildConfigField "int", "BLOODY_APP_ID", bloodyAppId ?: "0"
+        buildConfigField "String", "BLOODY_APP_HASH", "\"" + (bloodyAppHash ?: "") + "\""
+        // Bloodygram end
 
         externalNativeBuild {
             cmake {

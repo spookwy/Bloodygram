@@ -1,4 +1,4 @@
-# Epicgram (→ переименовываем в Bloodygram, см. «Следующие задачи»)
+# Bloodygram (бывший Epicgram)
 
 Кастомный Android-клиент Telegram. Фишки: сохранение удалённых сообщений и истории правок (как AyuGram), огоньки-стрики в чатах (перенос плагина «Огонёк»), чёрно-красный дизайн.
 
@@ -6,79 +6,92 @@
 
 ## Как работаем (цикл разработки)
 
-- **Запуск на ПК:** `powershell -ExecutionPolicy Bypass -File Tools\epicgram\run.ps1` — собирает x86_64-debug, поднимает эмулятор AVD `epic` (если не запущен, `-gpu host`), ставит (`adb install -r -t`) и запускает. В эмуляторе пользователь **уже залогинен в свой аккаунт** — можно проверять всё вживую (чаты, огоньки, профиль).
-- `run.ps1 -Phone` — установочный APK для телефона → `Desktop\Epicgram-debug.apk`.
-- Скриншоты/логи с эмулятора: `adb exec-out screencap -p > file.png`, `adb logcat -d`, `adb shell uiautomator dump`. В Git Bash для `adb shell` с путями `/sdcard/...` нужен `MSYS_NO_PATHCONV=1` (но **не** для `gradlew`). Тап: `adb shell input tap X Y` (экран 1080×2400).
+- **Запуск на ПК:** `powershell -ExecutionPolicy Bypass -File Tools\bloodygram\run.ps1` — собирает x86_64-debug, поднимает эмулятор AVD `epic` (если не запущен, `-gpu host`), ставит (`adb install -r -t`) и запускает. В эмуляторе пользователь **уже залогинен в свой аккаунт** — можно проверять всё вживую (чаты, огоньки, профиль).
+- `run.ps1 -Phone` — установочный APK для телефона → `Desktop\Bloodygram-debug.apk`.
+- `gradlew.bat` в апстриме нет — добавлен свой (стандартный wrapper, CRLF).
+- adb: `$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe` (не в PATH). Скриншоты/логи: `adb exec-out screencap -p > file.png`, `adb logcat -d`, `adb exec-out uiautomator dump /dev/tty`. В Git Bash для `adb shell` с путями `/sdcard/...` нужен `MSYS_NO_PATHCONV=1` (но **не** для `gradlew`). Тап: `adb shell input tap X Y` (экран 1080×2400; скриншот в Read показывается 900×2000 → координаты ×1.2).
+- Цвет пикселя со скриншота: `node <scratchpad>/px.js file.png x,y` (мини-декодер PNG, писали в сессии 28.09.2026; при необходимости написать заново — zlib + фильтры PNG).
 - Эмулятор с `-gpu swiftshader_indirect` падает (exit 139) — только `-gpu host`.
-- Ненадёжные ограничения окружения: удаление содержимого рабочей папки через `rm -rf` блокируется защитой Claude Code.
+- Ненадёжные ограничения окружения: удаление содержимого рабочей папки через `rm -rf` блокируется защитой Claude Code. Многострочные heredoc с кавычками в Bash-tool иногда ломаются — скрипты писать файлом через Write.
 
 ## База
 
 - Форк **официального Telegram for Android** — https://github.com/DrKLO/Telegram (стартовали с 12.10.5).
 - exteraGram не используем: публичный репо заархивирован и застрял на 9.6.6 (2023).
-- Лицензия **GPL-2.0** — исходники Epicgram обязаны быть публичными.
+- Лицензия **GPL-2.0** — исходники Bloodygram обязаны быть публичными.
 - Требования Telegram к сторонним клиентам: свой `api_id`, не называться «Telegram», не использовать их логотип.
 
 ## Сборка
 
 - Android Studio 2025.1.4+, **NDK 27.2.12479018**, Android SDK 36, JDK 17/21.
 - Сабмодули: `git -c core.longpaths=true submodule update --init --recursive --depth=1` (на Windows без `core.longpaths` падает сабмодуль `TMessagesProj_Modules/media`).
-- Ключи: `EPIC_APP_ID` / `EPIC_APP_HASH` в `local.properties` (в `.gitignore`) → `BuildConfig.EPIC_APP_ID/EPIC_APP_HASH` (задаются в `TMessagesProj/build.gradle`) → `BuildVars.APP_ID/APP_HASH`. Получить на https://my.telegram.org. Реальные ключи **не коммитить**.
+- Ключи: `BLOODY_APP_ID` / `BLOODY_APP_HASH` в `local.properties` (в `.gitignore`) → `BuildConfig.BLOODY_APP_ID/BLOODY_APP_HASH` (задаются в `TMessagesProj/build.gradle`) → `BuildVars.APP_ID/APP_HASH`. Получить на https://my.telegram.org. Реальные ключи **не коммитить**.
 - Подпись: `TMessagesProj/config/release.keystore` + пароли в `gradle.properties` — пока dummy из апстрима; для релиза заменить на свои.
 - `google-services.json` во всех модулях — заглушки (placeholder-проект). Пуши через FCM не работают, пока не заведём свой Firebase-проект.
 - Сборка debug для установки на телефон: `./gradlew :TMessagesProj_App:assembleAfatDebug`
   APK: `TMessagesProj_App/build/outputs/apk/afat/debug/app.apk`, пакет `com.epicgram.messenger.beta`.
+- **`applicationId` пока старый — `com.epicgram.messenger`** (`APP_PACKAGE` в `gradle.properties`). Смена = новое приложение: перелогин, потеря локальных данных на телефоне. Менять только с согласия пользователя (вместе с run.ps1).
 - Быстрая проверка компиляции (только arm64): добавить `-Pandroid.injected.build.abi=arm64-v8a`. **Такой APK помечен `testOnly=true`** и ставится только через `adb install -t`, файлом на телефон — «пакет недействителен». Лежит в `build/intermediates/apk/...`.
 - Подпись debug сейчас — dummy `release.keystore` из апстрима (публичный ключ, Play Protect ругается). Перед раздачей людям — свой keystore, иначе потом придётся переустанавливать с потерей данных.
 - Модули: `TMessagesProj` — весь код клиента (library); `TMessagesProj_App` — обёртка-приложение, которую собираем. Остальные `TMessagesProj_App*` (Huawei, HockeyApp, Standalone, Tests) не трогаем.
 
 ## Правила кода
 
-- **Минимум правок в файлах апстрима.** Вся наша логика — в отдельном пакете `TMessagesProj/src/main/java/com/epicgram/`. В файлах Telegram — только короткие хуки-вызовы в наш код.
-- Каждый хук в апстрим-файле помечаем комментарием `// Epicgram` (или блоком `// Epicgram start` / `// Epicgram end`), чтобы легко находить при мердже обновлений.
+- **Минимум правок в файлах апстрима.** Вся наша логика — в отдельном пакете `TMessagesProj/src/main/java/com/bloodygram/`. В файлах Telegram — только короткие хуки-вызовы в наш код.
+- Каждый хук в апстрим-файле помечаем комментарием `// Bloodygram` (или блоком `// Bloodygram start` / `// Bloodygram end`), чтобы легко находить при мердже обновлений.
 - `namespace` (`org.telegram.messenger`) не трогаем — меняем только `applicationId`, иначе переписывать тысячи импортов.
-- Настройки Epicgram — отдельный `SharedPreferences` (`epicgram_config`), класс `com.epicgram.EpicConfig`. Экран — `com.epicgram.ui.EpicSettingsActivity` (UniversalFragment), вход — пункт id `1000` в `SettingsActivity`.
-- Строки — `res/values/strings_epicgram.xml` (англ.) и `res/values/strings_epicgram_ru.xml` (те же имена с суффиксом `_ru`), префикс `Epic`. **Не в `values-ru/`**: app-модуль собирается с `localeFilters "zz"`, все локализованные ресурсы вырезаются. Читать **только через `com.epicgram.EpicStrings.get/format`** — берёт `_ru` по языку Telegram; `LocaleController.getString` их не видит. Склонение дней — `EpicStrings.days(n)`.
-- Данные Epicgram — свои SQLite-базы на аккаунт (`epicgram_<userId>.db`, `epicgram_edits_<userId>.db`, `epicgram_streaks_<userId>.db`), в базу Telegram не пишем. Синглтоны по аккаунту пересоздаются при смене userId.
-- **Переводы строк:** в репо `core.autocrlf=false` + `.gitattributes` (`* -text`). Глобальный autocrlf=true на этой машине превращал `assets/*.attheme` в CRLF → парсер тем Telegram ломался (в тёмной теме чёрный текст на чёрном). Ассеты не конвертировать.
-- Эмулятор для проверок: AVD `epic` (Android 35, x86_64, WHPX). Быстрая сборка под него: `-Pandroid.injected.build.abi=x86_64` + `adb install -t`. Не экспортировать `MSYS_NO_PATHCONV` при запуске `gradlew` — ломает wrapper.
+- Настройки — отдельный `SharedPreferences`, класс `com.bloodygram.BloodyConfig`. Экран — `com.bloodygram.ui.BloodySettingsActivity` (UniversalFragment), вход — пункт id `1000` в `SettingsActivity`.
+- **Имена файлов данных остались старыми** (`epicgram_config`, `epicgram_<userId>.db`, `epicgram_edits_<userId>.db`, `epicgram_streaks_<userId>.db`, канал уведомлений `epicgram_keep_alive`) — чтобы после переименования не потерялись сохранённые удалённые сообщения/стрики. Не переименовывать без миграции.
+- Строки — `res/values/strings_bloodygram.xml` (англ.) и `res/values/strings_bloodygram_ru.xml` (те же имена с суффиксом `_ru`), префикс `Bloody`. **Не в `values-ru/`**: app-модуль собирается с `localeFilters "zz"`, все локализованные ресурсы вырезаются. Читать **только через `com.bloodygram.BloodyStrings.get/format`** — берёт `_ru` по языку Telegram; `LocaleController.getString` их не видит. Склонение дней — `BloodyStrings.days(n)`.
+- **Имя приложения:** облачные строки Telegram подменяют `AppName` на «Telegram», поэтому хук в `LocaleController.getStringV2` всегда отдаёт `BloodyStrings.APP_NAME`. Заголовок над списком чатов в `DialogsActivity` был картинкой-логотипом `telegram_logo_2` — заменён на `BloodyStrings.appTitle()` («Bloody» красным).
+- Данные — свои SQLite-базы на аккаунт, в базу Telegram не пишем. Синглтоны по аккаунту пересоздаются при смене userId.
+- **Переводы строк:** в репо `core.autocrlf=false` + `.gitattributes` (`* -text`), всё хранится в LF. Раньше рабочая копия была в CRLF (глобальный autocrlf=true) — 28.09.2026 нормализовали. Если после правки `git diff` показывает весь файл — проверь `git ls-files --eol` (`i/lf w/crlf`) и сними `\r`. `grep -c $'\r'` в Git Bash тут врёт — смотреть `od -c`. Ассеты не конвертировать.
+- **Ассет темы** Telegram копирует в `files/` и обновляет копию только при смене **размера** файла — правка цвета той же длины не доходила до приложения. Хук `BloodyTheme.isStaleCopy` в `Theme.getAssetFile` перекопирует нашу тему после каждого обновления APK.
+- Эмулятор для проверок: AVD `epic` (Android 35, x86_64, WHPX). Быстрая сборка под него: `-Pandroid.injected.build.abi=x86_64` + `adb install -t`. Не экспортировать `MSYS_NO_PATHCONV` при запуске `gradlew` — ломает wrapper. Эмулятор относится к среднему классу производительности: Lite Mode выключает `FLAG_CHAT_BACKGROUND`.
 - Python в системе нет (только заглушка Store) — для скриптов использовать bash/node.
+- Git: локальная идентичность репо `xdlolpicd2 <xdlolpicd2@gmail.com>` (глобальной нет).
 
 ## Модули
 
-- `com.epicgram.deleted.EpicDeletedMessages` — перехват `updateDeleteMessages`/`updateDeleteChannelMessages` в `MessagesController.processUpdateArray` (`continue` вместо удаления), пометка «удалено» в `ChatMessageCell.measureTime`, перерисовка через `NotificationCenter.epicMessagesMarkedDeleted` → `ChatActivity.updateVisibleRows(condition)`.
-- `com.epicgram.history.EpicEditHistory` — хук после `MessageObject.getDialogId(message)` в ветке edit-апдейтов; старая версия читается из `messages_v2` на `storageQueue` Telegram (до `putMessages` новой). Пункт меню `OPTION_EDIT_HISTORY = 10001` в обоих билдерах контекстного меню `ChatActivity`.
-- `com.epicgram.streaks.EpicStreaks` — дни (флаги мои/собеседника) по личкам в `epicgram_streaks_<userId>.db` (`streak_days`, `streak_sync`, `streak_stats`, версия БД 3). Скан — алгоритм плагина (`walk`/`request`, см. Этап 2), очередь `syncQueue` по одному чату, `REQUEST_DELAY = 300` мс, чат ставится в очередь лениво из `getStreak()` при первом показе, раз в день (`synced`). Инкремент по `didReceiveNewMessages`. Счётчик удалённых: `onRemoteDelete` (из `EpicDeletedMessages.interceptDelete`) и `onOwnDelete` (хук в `MessagesController.deleteMessages`). Обновление UI — `notifyUi()` → `updateInterfaces(UPDATE_MASK_NAME)` + `NotificationCenter.epicStreaksUpdated`.
-- `com.epicgram.streaks.EpicStreakStats` — статистика для окна «Огонёк» (порт `StatsJob` плагина): листает историю от первого сообщения (`offset_id=mx+1, add_offset=-100, min_id=mx`), инициатива с окном 30 мин, прогресс сохраняется в `streak_stats` после каждой страницы.
-- `com.epicgram.streaks.EpicStreakUi` — окно «Огонёк» (`showStats`), строка профиля (`bindProfileRow`), тап по огоньку в шапке (`HeaderTouch`), пункт меню `MENU_ID = 10002`, хелперы `listSuffix/headerTitle/profileName` с учётом настроек показа.
-- `com.epicgram.streaks.EpicFire` — векторный огонёк (пути из SVG плагина «Огонёк», `C:\Users\SWAGA_PA3PEIIIEHA\Desktop\Projects\Fire Ayugram\ogonek.plugin` — эталон дизайна), уровни цвета: серый (0/под угрозой), оранжевый, 100+ красный, 200+ фиолетовый, 300+ синий, 500+ зелёный. Суффикс « 🔥N» (огонёк 1.05×, число 0.8× sans-serif-light) после имени в `DialogCell.buildLayout` (имя ellipsize-ится до огонька) и в `ChatAvatarContainer.setTitle`.
-- `com.epicgram.keepalive.EpicKeepAliveService` — foreground-сервис (`remoteMessaging`) вместо FCM: хук в `ApplicationLoader.startPushService()`, включает `pushConnection`. Без него закрытое приложение не получает апдейты → удалённые не сохраняются.
+- `com.bloodygram.deleted.BloodyDeletedMessages` — перехват `updateDeleteMessages`/`updateDeleteChannelMessages` в `MessagesController.processUpdateArray` (`continue` вместо удаления), пометка «удалено» в `ChatMessageCell.measureTime`, перерисовка через `NotificationCenter.bloodyMessagesMarkedDeleted` → `ChatActivity.updateVisibleRows(condition)`.
+- `com.bloodygram.history.BloodyEditHistory` — хук после `MessageObject.getDialogId(message)` в ветке edit-апдейтов; старая версия читается из `messages_v2` на `storageQueue` Telegram (до `putMessages` новой). Пункт меню `OPTION_EDIT_HISTORY = 10001` в обоих билдерах контекстного меню `ChatActivity`.
+- `com.bloodygram.streaks.BloodyStreaks` — дни (флаги мои/собеседника) по личкам в `epicgram_streaks_<userId>.db` (`streak_days`, `streak_sync`, `streak_stats`, версия БД 3).
+  - Скан (`startScan` → `loadLocalDays` → `walk`/`next`/`fetch`/`applyPage`): сначала дни «оба писали» из локальной БД Telegram (`messages_v2`, GROUP BY дню, как `_local_day_flags` плагина — берём только положительные дни, кэш с дырами); затем идём по дням назад, каждый неизвестный день — запрос `getHistory` с `offset_date = конец дня`, по `PROBES = 3` дня параллельно; день, не влезший в страницу, догружается по `offset_id` (`continueFrom`); `completeBelow` — история кончилась.
+  - Очередь: до `MAX_PARALLEL = 3` чатов одновременно, выбирается чат, показанный последним (`wanted`: время из `getStreak()`/`requestSyncIfStale`, `front` = +1 ч). Все запросы идут через общий темп `REQUEST_INTERVAL = 500` мс: при ~3 запросах/с Telegram уже отвечает FLOOD_WAIT 10–25 с (короткие FLOOD_WAIT tgnet переотправляет сам, мы их не видим). Лимит 800 запросов на скан. Первичный подсчёт стрика 175 дней ≈ 1–1.5 мин — упирается в лимит сервера; повторные — мгновенно (дни кэшируются).
+  - Прогресс: `getScanProgress(dialogId)` (дней проверено), `notifyProgress()` → только `NotificationCenter.bloodyStreaksUpdated` (без перестройки списка).
+  - Инкремент по `didReceiveNewMessages`. Счётчик удалённых: `onRemoteDelete` (из `BloodyDeletedMessages.interceptDelete`) и `onOwnDelete` (хук в `MessagesController.deleteMessages`). Обновление UI — `notifyUi()` → `updateInterfaces(UPDATE_MASK_NAME)` + `bloodyStreaksUpdated`.
+  - `getNameColor/colorName` — цвет имени по уровню огонька (`BloodyFire.nameColor(tier)` = средний цвет пламени, серый не красим), настройка `streakNameColor`.
+- `com.bloodygram.streaks.BloodyStreakStats` — статистика для окна «Огонёк» (порт `StatsJob` плагина): листает историю от первого сообщения (`offset_id=mx+1, add_offset=-100, min_id=mx`), инициатива с окном 30 мин, прогресс сохраняется в `streak_stats` после каждой страницы.
+- `com.bloodygram.streaks.BloodyStreakUi` — окно «Огонёк» (`showStats`, во время подсчёта — полоска `ProgressBar` + «проверено N дней»), строка профиля (`bindProfileRow`), тап по огоньку в шапке (`HeaderTouch`), пункт меню `MENU_ID = 10002`, хелперы `listSuffix/listName/listHash/headerTitle/profileName` с учётом настроек.
+  - **Список чатов:** `DialogCell.DialogUpdateHelper.update()` сравнивает `lastDrawnBloodyFire` с `BloodyStreakUi.listHash()` (число, уровень, настройки) — при изменении огонька layout перестраивается (раньше в списке висел «0», а в шапке уже 6).
+- `com.bloodygram.streaks.BloodyFire` — векторный огонёк (пути из SVG плагина «Огонёк», `C:\Users\SWAGA_PA3PEIIIEHA\Desktop\Projects\Fire Ayugram\ogonek.plugin` — эталон дизайна), уровни цвета: серый (0/под угрозой), оранжевый, 100+ красный, 200+ фиолетовый, 300+ синий, 500+ зелёный. Суффикс « 🔥N» после имени в `DialogCell.buildLayout` и в `ChatAvatarContainer.setTitle`.
+- `com.bloodygram.ui.BloodyProfile` — строка «ID» в профиле (как AyuGram): `bloodyIdRow` в `ProfileActivity` после `usernameRow` (для людей) и в блоке инфо чатов/каналов (блок показывается и без описания, если включён ID); id в стиле Bot API (`-100…` для каналов/супергрупп, `-…` для обычных групп); тап копирует. Настройка `showPeerId`.
+- `com.bloodygram.BloodyTheme` — имя ассета темы, `isStaleCopy`.
+- `com.bloodygram.keepalive.BloodyKeepAliveService` — foreground-сервис (`remoteMessaging`) вместо FCM: хук в `ApplicationLoader.startPushService()`, включает `pushConnection`. Без него закрытое приложение не получает апдейты → удалённые не сохраняются.
+- **Снег в чатах:** `SizeNotifierFrameLayout.checkSnowflake` + `SnowflakesEffect.onDraw` — рисуется при празднике Telegram или при `BloodyConfig.isChatSnowAllowed()` (настройка `chatSnow` + Lite Mode `FLAG_PARTICLES`, который есть во всех пресетах; праздничный снег Telegram требует `FLAG_CHAT_BACKGROUND` — только «высокий» пресет). Добавлен вызов и для градиентных обоев без паттерна.
+- **Тема «Bloodygram»:** `assets/bloodygram.attheme` генерируется `node Tools/bloodygram/make_theme.js` из `night.attheme`. Исходящие пузыри — градиент `chat_outBubble` (красный) → `chat_outBubbleGradient/2/3` (тёмно-красный → почти чёрный), `chat_outBubbleGradientAnimated=1`: градиент привязан к экрану, вверху пузыри тёмные, внизу красные, «переливаются» при скролле. В `Theme.java` тема зарегистрирована как «Bloodygram» + алиас «Epicgram» (старое имя в сохранённых настройках); флаг `bloodyThemeDefaultApplied`.
 - Стиль кода — как в Telegram: Java, без лишних абстракций, `AndroidUtilities.dp()`, `Theme.getColor()`.
 
 ## Git
 
-- **Вся работа пока не закоммичена** (ветка `main` поверх `upstream/master` 12.10.5). Первым делом в новом чате предложить пользователю сделать коммит (`local.properties` в `.gitignore`, ключи не попадут).
-- В `git stash` лежит старая запись `epic-wip` — резервная копия раннего состояния, рабочее дерево новее; её можно удалить (`git stash drop`) после коммита.
+- Коммиты на `main` поверх `upstream/master` 12.10.5 (локально, не запушено).
+- В `git stash` лежит старая запись `epic-wip` — резервная копия раннего состояния, давно устарела; можно удалить (`git stash drop`).
 
 ## Обновление от апстрима
 
 - `origin` → наш GitHub, `upstream` → DrKLO/Telegram.
-- Обновление: `git fetch upstream` → `git merge <тег/коммит релиза>` → конфликты ищем по `// Epicgram`.
+- Обновление: `git fetch upstream` → `git merge <тег/коммит релиза>` → конфликты ищем по `// Bloodygram`.
 - Клон изначально shallow; перед первым мерджем: `git fetch --unshallow upstream`.
 
 ---
 
-# Следующие задачи (запрос пользователя, по порядку важности)
+# Следующие задачи
 
-1. **Баг: в списке чатов огонёк «0», а в шапке уже правильный (6).** После досчёта `notifyUi()` шлёт `updateInterfaces(UPDATE_MASK_NAME)`, но `DialogCell.update(mask)` не всегда перестраивает layout (считает, что имя не менялось). Плагин решал так: в течение ~1.5 с после изменения стриков в `DialogCell.update` сбрасывал `updateHelper.lastDrawnDialogId = -1` и подменял `mask = 0` (полная перестройка). Сделать аналог: флаг/время «стрики изменились» в `EpicStreaks` и хук в начале `DialogCell.update(int mask, boolean animated)`, либо после досчёта вызывать `dialogsAdapter` refresh / `NotificationCenter.dialogsNeedReload`. Проверить на эмуляторе.
-2. **Ускорить подсчёт огонька.** Идеи: (а) как в плагине — сначала локальная БД Telegram: `SELECT ((date+tzOffset)/86400), MAX(out), MIN(out) FROM messages_v2 WHERE uid=? AND date>0 GROUP BY 1 ORDER BY 1 DESC LIMIT 3000` на `MessagesStorage.getStorageQueue()` (плагин `_local_day_flags`), сервер добирать только с дня, где локальная цепочка оборвалась; (б) видимые на экране чаты — в начало очереди; (в) 2–3 параллельных скана вместо одного и `REQUEST_DELAY` 100–150 мс (следить за FLOOD_WAIT).
-3. **Прогресс-бар подсчёта огонька в окне «Огонёк»** (сейчас просто «Огонёк ещё считается…»): отдавать из скана текущий проверенный день/число дней (`scan.today - scan.day`) через `epicStreaksUpdated`, в окне — `LinearProgressIndicator`/полоска + текст «проверено N дней».
-4. **ID собеседника в профиле, как в AyuGram**: отдельная строка в блоке информации (под телефоном/юзернеймом) — «1329248998 / ID», по тапу копировать. В `ProfileActivity` так же, как `epicStreakRow`: поле `epicIdRow`, сброс в `updateRowsIds`, добавить после `usernameRow`, тип `VIEW_TYPE_TEXT_DETAIL`, bind через `TextDetailCell.setTextAndValue(id, "ID", divider)`, клик → `AndroidUtilities.addToClipboard` + bulletin. Для чатов/каналов — тоже (id `-100…`).
-5. **Переименовать в Bloodygram**: `AppName`/`AppNameBeta` во всех `res/values*/strings.xml` (сейчас «Epicgram»), строки `EpicSettings*`, заголовок уведомления keep-alive, настройки. **Заголовок «Telegram» над списком чатов** берётся в `DialogsActivity` (~стр. 3517 `getString(R.string.AppName)`) через `LocaleController` → `AppName` исключён из генерации строк (`TelegramStringsTask.GENERATED_EXCLUSIONS`) и подменяется облачной строкой «Telegram»; заменить на `EpicStrings`/константу «Bloodygram». Поискать другие места `R.string.AppName` в UI. Пакет/папку/классы `com.epicgram` можно оставить (внутреннее имя), либо переименовать отдельно — решить с пользователем.
-6. **Цвет имени чата по уровню огонька** (как сам огонёк: серый/оранжевый/красный/фиолетовый/синий/зелёный) — в списке чатов (`DialogCell`: `ForegroundColorSpan` на `nameStringFinal` или цвет `nameLayout` paint), в шапке (`ChatAvatarContainer.setTitle`) и в профиле. Цвет брать из `EpicFire.TIER_COLORS` (напр. цвет верха градиента), серый — не красить. Тумблер в настройках.
-7. **Градиентные красно-чёрные исходящие сообщения, «переливаются» при скролле** — встроено в Telegram: градиент исходящих пузырей привязан к экрану и сдвигается при скролле. В `Tools/epicgram/make_theme.js` добавить в `OVERRIDES` ключи `chat_outBubbleGradient1/2/3` (красный → тёмно-красный → почти чёрный) и `chat_outBubbleGradientAnimated=1` (ключи есть в `Theme.java` ~2834, 2912), перегенерировать тему, проверить читаемость текста (`chat_messageTextOut` белый).
-8. **Падающий снег на фоне чата, как новогодний в Telegram**: есть `ui/Components/SnowflakesEffect.java`, уже используется в `SizeNotifierFrameLayout` (фон чата) и `ActionBar` — там включается по празднику (`Theme.canStartHolidayAnimation()` / похожее). Включить всегда (или тумблером в настройках Epicgram) для фона чата.
-9. Записать итоги сюда же и отметить в Roadmap.
+- Решить с пользователем смену `applicationId` на `com.bloodygram.messenger` (перелогин, потеря данных на телефоне) — и заодно своя иконка.
+- Своя иконка (не бумажный самолётик) — сейчас в UI остались логотипы Telegram (напр. `telegram_logo_2` в `DialogStoriesCell`).
+- Проверить удалённые сообщения после повторного открытия чата (см. Этап 1).
+
+Сделано 28.09.2026: баг «0» в списке, ускорение подсчёта (локальная БД, приоритет видимых, общий темп запросов), прогресс в окне «Огонёк», ID в профиле, переименование в Bloodygram (пакет, классы, строки, заголовок), цвет имени по огоньку, градиент исходящих, снег в чатах, новый раздел настроек «Внешний вид» (ID / цвет имени / снег).
 
 ---
 
@@ -87,14 +100,16 @@
 ## Этап 0 — Форк собирается и запускается
 - [x] Клон DrKLO/Telegram 12.10.5 с сабмодулями, git-remote `upstream`
 - [x] Установить NDK 27.2.12479018 + CMake 3.22.1 через sdkmanager
-- [x] Ключи через `local.properties` → `BuildConfig` (вписать свои `EPIC_APP_ID`/`EPIC_APP_HASH`)
-- [x] `applicationId` → `com.epicgram.messenger`, `AppName` → «Epicgram» во всех локалях
+- [x] Ключи через `local.properties` → `BuildConfig`
+- [x] `applicationId` → `com.epicgram.messenger`, `AppName` → «Bloodygram» во всех локалях
+- [x] Переименование Epicgram → Bloodygram (пакет `com.bloodygram`, классы `Bloody*`, строки, хуки `// Bloodygram`, заголовок списка чатов)
+- [ ] `applicationId` → `com.bloodygram.messenger` (по согласию пользователя)
 - [ ] Своя иконка (не бумажный самолётик)
 - [x] Firebase-конфиги → заглушки; выключены `CHECK_UPDATES`, `SUPPORTS_PASSKEYS`, `SAFETYNET_KEY`
 - [ ] Проверить остальные «официальные» вещи: Google Auth client id, биллинг/Stars, ссылки на Play Store
 - [x] Debug-сборка собирается (arm64, ~2 мин инкрементально)
-- [x] Debug-сборка ставится на телефон и в эмулятор, логин работает (ключи в `local.properties` вписаны)
-- [x] Каркас `com.epicgram`: `EpicConfig`, `EpicStrings`, экран «Настройки Epicgram» в меню настроек
+- [x] Debug-сборка ставится на телефон и в эмулятор, логин работает
+- [x] Каркас: `BloodyConfig`, `BloodyStrings`, экран настроек в меню настроек
 
 ## Этап 1 — Удалённые сообщения и история правок
 - [x] Перехват удаления в `processUpdateArray`, сообщение остаётся в кэше Telegram
@@ -110,33 +125,35 @@
 - [ ] Известное ограничение: сохраняется только то, что клиент успел получить до удаления
 
 ## Этап 2 — Огоньки (стрики)
-- [x] `com.epicgram.streaks.EpicStreaks`: серия дней подряд, когда **оба** писали в личке (боты/удалённые/сервисные исключены)
-- [x] Своя база `epicgram_streaks_<userId>.db` (`streak_days`, `streak_sync`), инкремент по `didReceiveNewMessages`
-- [x] Первичный расчёт по серверной истории (`messages.getHistory`) — фоново, раз в день на диалог, с лимитами
-- [x] Векторный огонёк как в плагине, уровни цвета, серый = под угрозой; после имени в списке чатов
-- [x] Огонёк в шапке чата (`ChatAvatarContainer`)
-- [x] Полный перенос плагина: `EpicStreakUi` (окно «Огонёк» — инициатива 30 мин, статистика, удалённые; тап по огоньку в шапке через `ChatAvatarContainer.dispatchTouchEvent`; строка `epicStreakRow` и огонёк у имени в `ProfileActivity`; пункт меню `MENU_ID = 10002` в ⋮ чата и профиля), `EpicStreakStats` (листание истории от первого сообщения, прогресс в `streak_stats`), настройки показа, «Пересчитать все стрики»
-- [x] Синк стриков ленивый, как в плагине: чат ставится в очередь при первом показе, раз в день; FLOOD_WAIT выдерживается
-- [x] Скан стрика — алгоритм плагина (`EpicStreaks.walk/request`): идём по дням назад, засчитанный день пропускаем прыжком `offset_date = midnightOf(day+1)`, уже известные «оба писали» дни берём из кэша без запросов, лимит 400 запросов. (Старый скан упирался в 4000 сообщений → в активном чате было 20 вместо 175.)
-- [x] Проверено на устройстве: окно статистики, строка и огонёк в профиле, огонёк в шапке работают; число сверено с плагином (175 = 175 после фикса скана)
+- [x] Серия дней подряд, когда **оба** писали в личке (боты/удалённые/сервисные исключены)
+- [x] Своя база `epicgram_streaks_<userId>.db`, инкремент по `didReceiveNewMessages`
+- [x] Первичный расчёт по серверной истории — фоново, раз в день на диалог, с лимитами
+- [x] Векторный огонёк как в плагине, уровни цвета, серый = под угрозой; после имени в списке чатов, в шапке, в профиле
+- [x] Полный перенос плагина: окно «Огонёк», строка в профиле, пункт меню, статистика, настройки показа, «Пересчитать все стрики»
+- [x] Скан — алгоритм плагина (день за днём назад, прыжок `offset_date`), число сверено с плагином (175 = 175, в т.ч. после переделки 28.09)
+- [x] Список чатов обновляет огонёк после досчёта (`listHash` в `DialogUpdateHelper`)
+- [x] Ускорение: локальная БД Telegram, приоритет видимых чатов, 3 чата параллельно, пробы по 3 дня, общий темп 500 мс
+- [x] Прогресс подсчёта в окне «Огонёк» (полоска + «проверено N дней»)
+- [x] Цвет имени по уровню огонька (список, шапка, профиль), тумблер
 - [x] Удалённые сообщения работают (в т.ч. при закрытом приложении через keep-alive)
 - [ ] Локальное уведомление вечером «огонёк погаснет»
-- [x] Настройки: вкл/выкл, где показывать (список/шапка/профиль/строка), минимальный стрик (0…100, по умолчанию 0 как в плагине), «Пересчитать все стрики»
 - [ ] Помнить: огонёк локальный, собеседник на обычном Telegram его не видит
 
 ## Этап 3 — Дизайн и плавность
 - [ ] Пружинные анимации (`androidx.dynamicanimation` SpringAnimation) для открытия чатов, появления сообщений, переключения вкладок
 - [ ] Blur под шапкой и нижней панелью (у Telegram частично есть — расширить)
 - [ ] Настраиваемые скругления пузырей, аватарок, отступы
-- [x] Чёрно-красная тема «Epicgram» по умолчанию: `assets/epicgram.attheme` генерируется `node Tools/epicgram/make_theme.js` из `night.attheme` (синее → красное, фоны → чёрные, ключевые цвета в `OVERRIDES`). Регистрация в `Theme.java` после «Night», один раз ставится дневной и ночной (`epicThemeDefaultApplied`), в `isDark()` и `applyDayNightThemeMaybe` — исключения для «Epicgram» (иначе днём при авто-ночи Telegram подменял её на Blue)
-- [x] Тема проверена на эмуляторе после входа (список чатов, чат, окно огонька) — выглядит как задумано
+- [x] Чёрно-красная тема «Bloodygram» по умолчанию (генератор `Tools/bloodygram/make_theme.js`)
+- [x] Градиентные красно-чёрные исходящие, переливаются при скролле
+- [x] Падающий снег на фоне чата (тумблер «Снег в чатах»)
+- [x] ID собеседника/чата в профиле (тумблер)
 - [ ] Пройтись по остальным экранам (настройки, профиль, медиа), подправить `OVERRIDES`
 - [ ] Более плавный скролл / переходы между экранами, отключаемые «тяжёлые» эффекты для слабых телефонов
 - [ ] Свой шрифт (опционально)
 
 ## Этап 4 — Релиз
 - [ ] Свой GitHub-репо (GPL), README, CI-сборка APK (GitHub Actions)
-- [ ] Release keystore, подпись, версии `Epicgram x.y (TG 12.x.y)`
+- [ ] Release keystore, подпись, версии `Bloodygram x.y (TG 12.x.y)`
 - [ ] Канал в Telegram для релизов, OTA-проверка обновлений через свой канал/GitHub Releases
 
 ## Идеи на потом

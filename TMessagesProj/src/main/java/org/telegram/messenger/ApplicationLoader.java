@@ -365,7 +365,7 @@ public class ApplicationLoader extends Application {
     });
 
     public static void startPushService() {
-        if (com.epicgram.keepalive.EpicKeepAliveService.onStartPushService()) { // Epicgram
+        if (com.bloodygram.keepalive.BloodyKeepAliveService.onStartPushService()) { // Bloodygram
             return;
         }
         SharedPreferences preferences = MessagesController.getGlobalNotificationsSettings();

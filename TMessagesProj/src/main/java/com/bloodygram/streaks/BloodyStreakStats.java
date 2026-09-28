@@ -1,4 +1,4 @@
-package com.epicgram.streaks;
+package com.bloodygram.streaks;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
@@ -15,9 +15,9 @@ import java.util.HashMap;
  * History is crawled from the FIRST message towards new ones (getHistory with add_offset=-limit and min_id),
  * so initiative points are given in order and progress is saved after every page:
  * closing the window or restarting the app continues from the same place, later opens load only new messages.
- * Runs on {@link EpicStreaks#queue}.
+ * Runs on {@link BloodyStreaks#queue}.
  */
-public class EpicStreakStats {
+public class BloodyStreakStats {
 
     private static final int PAGE_SIZE = 100;
     private static final int INITIATIVE_WINDOW = 30 * 60;
@@ -25,49 +25,49 @@ public class EpicStreakStats {
     private static final int CRAWL_DELAY = 300;
 
     public static class Result {
-        public EpicStreaks.Stats stats;
+        public BloodyStreaks.Stats stats;
         public int total = -1;
         public boolean done;
         public boolean failed;
         public boolean paused;
     }
 
-    private static final HashMap<String, EpicStreakStats> jobs = new HashMap<>();
+    private static final HashMap<String, BloodyStreakStats> jobs = new HashMap<>();
 
     /** Starts (or reuses a running) job; {@code listener} is called on the UI thread. */
-    public static void start(EpicStreaks streaks, long dialogId, Utilities.Callback<Result> listener) {
-        EpicStreaks.queue.postRunnable(() -> {
+    public static void start(BloodyStreaks streaks, long dialogId, Utilities.Callback<Result> listener) {
+        BloodyStreaks.queue.postRunnable(() -> {
             String key = streaks.account + ":" + dialogId;
-            EpicStreakStats job = jobs.get(key);
+            BloodyStreakStats job = jobs.get(key);
             if (job != null && !job.result.done) {
                 job.listener = listener;
                 job.emit();
                 return;
             }
-            job = new EpicStreakStats(streaks, dialogId, listener);
+            job = new BloodyStreakStats(streaks, dialogId, listener);
             jobs.put(key, job);
             job.begin();
         });
     }
 
     /** Detaches the listener of a closed window; the job keeps counting in background. */
-    public static void detach(EpicStreaks streaks, long dialogId, Utilities.Callback<Result> listener) {
-        EpicStreaks.queue.postRunnable(() -> {
-            EpicStreakStats job = jobs.get(streaks.account + ":" + dialogId);
+    public static void detach(BloodyStreaks streaks, long dialogId, Utilities.Callback<Result> listener) {
+        BloodyStreaks.queue.postRunnable(() -> {
+            BloodyStreakStats job = jobs.get(streaks.account + ":" + dialogId);
             if (job != null && job.listener == listener) {
                 job.listener = null;
             }
         });
     }
 
-    private final EpicStreaks streaks;
+    private final BloodyStreaks streaks;
     private final long dialogId;
     private final Result result = new Result();
     private Utilities.Callback<Result> listener;
     private TLRPC.InputPeer peer;
     private int requests;
 
-    private EpicStreakStats(EpicStreaks streaks, long dialogId, Utilities.Callback<Result> listener) {
+    private BloodyStreakStats(BloodyStreaks streaks, long dialogId, Utilities.Callback<Result> listener) {
         this.streaks = streaks;
         this.dialogId = dialogId;
         this.listener = listener;
@@ -87,7 +87,7 @@ public class EpicStreakStats {
         TLRPC.TL_messages_getHistory req = new TLRPC.TL_messages_getHistory();
         req.peer = peer;
         req.limit = 1;
-        ConnectionsManager.getInstance(streaks.account).sendRequest(req, (response, error) -> EpicStreaks.queue.postRunnable(() -> {
+        ConnectionsManager.getInstance(streaks.account).sendRequest(req, (response, error) -> BloodyStreaks.queue.postRunnable(() -> {
             if (response instanceof TLRPC.TL_messages_messagesSlice || response instanceof TLRPC.TL_messages_channelMessages) {
                 result.total = ((TLRPC.messages_Messages) response).count;
             } else if (response instanceof TLRPC.messages_Messages) {
@@ -104,7 +104,7 @@ public class EpicStreakStats {
         long wait = streaks.floodUntil - System.currentTimeMillis();
         if (wait > 0) {
             emit();
-            EpicStreaks.queue.postRunnable(this::crawl, wait);
+            BloodyStreaks.queue.postRunnable(this::crawl, wait);
             return;
         }
         requests++;
@@ -116,7 +116,7 @@ public class EpicStreakStats {
         req.add_offset = -PAGE_SIZE;
         req.limit = PAGE_SIZE;
         req.min_id = last;
-        ConnectionsManager.getInstance(streaks.account).sendRequest(req, (response, error) -> EpicStreaks.queue.postRunnable(() -> onCrawl(response, error)));
+        ConnectionsManager.getInstance(streaks.account).sendRequest(req, (response, error) -> BloodyStreaks.queue.postRunnable(() -> onCrawl(response, error)));
     }
 
     private void onCrawl(Object response, TLRPC.TL_error error) {
@@ -130,7 +130,7 @@ public class EpicStreakStats {
             return;
         }
         ArrayList<TLRPC.Message> messages = ((TLRPC.messages_Messages) response).messages;
-        EpicStreaks.Stats s = streaks.stats(dialogId);
+        BloodyStreaks.Stats s = streaks.stats(dialogId);
         int last = s.mx;
         ArrayList<TLRPC.Message> batch = new ArrayList<>();
         for (int i = 0; i < messages.size(); i++) {
@@ -176,7 +176,7 @@ public class EpicStreakStats {
         } else if (requests >= MAX_REQUESTS) {
             finish(false, true); // very long history: continue on next open
         } else {
-            EpicStreaks.queue.postRunnable(this::crawl, CRAWL_DELAY);
+            BloodyStreaks.queue.postRunnable(this::crawl, CRAWL_DELAY);
         }
     }
 

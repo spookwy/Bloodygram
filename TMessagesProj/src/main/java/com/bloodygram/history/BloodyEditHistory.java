@@ -1,4 +1,4 @@
-package com.epicgram.history;
+package com.bloodygram.history;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -9,8 +9,8 @@ import android.text.Spanned;
 import android.text.style.StyleSpan;
 import android.graphics.Typeface;
 
-import com.epicgram.EpicConfig;
-import com.epicgram.EpicStrings;
+import com.bloodygram.BloodyConfig;
+import com.bloodygram.BloodyStrings;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.AndroidUtilities;
@@ -35,21 +35,21 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Keeps previous text versions of edited messages.
  */
-public class EpicEditHistory {
+public class BloodyEditHistory {
 
     public static final int OPTION_EDIT_HISTORY = 10001;
 
-    private static final EpicEditHistory[] instances = new EpicEditHistory[UserConfig.MAX_ACCOUNT_COUNT];
-    private static final DispatchQueue queue = new DispatchQueue("epicEditHistoryQueue");
+    private static final BloodyEditHistory[] instances = new BloodyEditHistory[UserConfig.MAX_ACCOUNT_COUNT];
+    private static final DispatchQueue queue = new DispatchQueue("bloodyEditHistoryQueue");
 
-    public static EpicEditHistory getInstance(int account) {
+    public static BloodyEditHistory getInstance(int account) {
         long userId = UserConfig.getInstance(account).getClientUserId();
-        EpicEditHistory instance = instances[account];
+        BloodyEditHistory instance = instances[account];
         if (instance == null || instance.userId != userId) {
-            synchronized (EpicEditHistory.class) {
+            synchronized (BloodyEditHistory.class) {
                 instance = instances[account];
                 if (instance == null || instance.userId != userId) {
-                    instances[account] = instance = new EpicEditHistory(account, userId);
+                    instances[account] = instance = new BloodyEditHistory(account, userId);
                 }
             }
         }
@@ -71,7 +71,7 @@ public class EpicEditHistory {
     private final ConcurrentHashMap<Long, Set<Integer>> withHistory = new ConcurrentHashMap<>();
     private DbHelper db;
 
-    private EpicEditHistory(int account, long userId) {
+    private BloodyEditHistory(int account, long userId) {
         this.account = account;
         this.userId = userId;
         if (userId != 0) {
@@ -84,8 +84,8 @@ public class EpicEditHistory {
      * after message.dialog_id is filled and before the new version is written to the cache.
      */
     public void onMessageEdited(TLRPC.Message message) {
-        EpicConfig.load();
-        if (!EpicConfig.saveEditHistory || userId == 0 || message == null || message.id <= 0 || message.dialog_id == 0) {
+        BloodyConfig.load();
+        if (!BloodyConfig.saveEditHistory || userId == 0 || message == null || message.id <= 0 || message.dialog_id == 0) {
             return;
         }
         final long dialogId = message.dialog_id;
@@ -128,7 +128,7 @@ public class EpicEditHistory {
 
     public static void addMenuItem(int account, MessageObject messageObject, ArrayList<CharSequence> items, ArrayList<Integer> options, ArrayList<Integer> icons) {
         if (getInstance(account).hasHistory(messageObject)) {
-            items.add(EpicStrings.get(R.string.EpicEditHistory));
+            items.add(BloodyStrings.get(R.string.BloodyEditHistory));
             options.add(OPTION_EDIT_HISTORY);
             icons.add(R.drawable.msg_recent);
         }
@@ -158,13 +158,13 @@ public class EpicEditHistory {
                     int start = text.length();
                     text.append(LocaleController.formatDateTime(version.date, true));
                     if (i == versions.size() - 1) {
-                        text.append(" · ").append(EpicStrings.get(R.string.EpicEditHistoryCurrent));
+                        text.append(" · ").append(BloodyStrings.get(R.string.BloodyEditHistoryCurrent));
                     }
                     text.setSpan(new StyleSpan(Typeface.BOLD), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     text.append("\n").append(version.text);
                 }
                 AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
-                builder.setTitle(EpicStrings.get(R.string.EpicEditHistory));
+                builder.setTitle(BloodyStrings.get(R.string.BloodyEditHistory));
                 builder.setMessage(text);
                 builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
                 fragment.showDialog(builder.create());

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Epicgram</string>
-    <string name="AppNameBeta">Epicgram Debug</string>
+    <string name="AppName">Bloodygram</string>
+    <string name="AppNameBeta">Bloodygram Debug</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>

@@ -9485,7 +9485,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 req = new TLRPC.TL_messages_deleteMessages();
                 req.id = toSend;
                 req.revoke = forAll;
-                com.epicgram.streaks.EpicStreaks.getInstance(currentAccount).onOwnDelete(dialogId, toSend.size()); // Epicgram
+                com.bloodygram.streaks.BloodyStreaks.getInstance(currentAccount).onOwnDelete(dialogId, toSend.size()); // Bloodygram
 
                 NativeByteBuffer data = null;
                 try {
@@ -18815,7 +18815,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 dialogs_read_outbox_max.put(dialogId, Math.max(value, update.max_id));
             } else if (baseUpdate instanceof TL_update.TL_updateDeleteMessages) {
                 TL_update.TL_updateDeleteMessages update = (TL_update.TL_updateDeleteMessages) baseUpdate;
-                if (com.epicgram.deleted.EpicDeletedMessages.getInstance(currentAccount).interceptDelete(0, update.messages)) { // Epicgram
+                if (com.bloodygram.deleted.BloodyDeletedMessages.getInstance(currentAccount).interceptDelete(0, update.messages)) { // Bloodygram
                     continue;
                 }
                 if (deletedMessages == null) {
@@ -19343,7 +19343,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d(baseUpdate + " channelId = " + update.channel_id);
                 }
-                if (com.epicgram.deleted.EpicDeletedMessages.getInstance(currentAccount).interceptDelete(update.channel_id, update.messages)) { // Epicgram
+                if (com.bloodygram.deleted.BloodyDeletedMessages.getInstance(currentAccount).interceptDelete(update.channel_id, update.messages)) { // Bloodygram
                     continue;
                 }
                 if (deletedMessages == null) {
@@ -19476,7 +19476,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
 
                 MessageObject.getDialogId(message);
-                com.epicgram.history.EpicEditHistory.getInstance(currentAccount).onMessageEdited(message); // Epicgram
+                com.bloodygram.history.BloodyEditHistory.getInstance(currentAccount).onMessageEdited(message); // Bloodygram
 
                 ConcurrentHashMap<Long, Integer> read_max = message.out ? dialogs_read_outbox_max : dialogs_read_inbox_max;
                 Integer value = read_max.get(message.dialog_id);

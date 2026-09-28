@@ -1,6 +1,7 @@
-package com.epicgram.streaks;
+package com.bloodygram.streaks;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.drawable.GradientDrawable;
 import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
@@ -11,12 +12,14 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.epicgram.EpicConfig;
-import com.epicgram.EpicStrings;
+import com.bloodygram.BloodyConfig;
+import com.bloodygram.BloodyStrings;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -39,7 +42,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
  * Streak UI outside the dialogs list: chat header fire tap, profile name/row,
  * "Streak and initiative" menu item and the statistics window (port of the "Огонёк" plugin).
  */
-public class EpicStreakUi {
+public class BloodyStreakUi {
 
     public static final int MENU_ID = 10002;
 
@@ -48,35 +51,59 @@ public class EpicStreakUi {
 
     // region places
 
-    public static EpicFire.Suffix listSuffix(int account, long dialogId, TextPaint paint) {
-        EpicConfig.load();
-        return EpicConfig.streakInList ? EpicStreaks.getInstance(account).getSuffix(dialogId, paint) : null;
+    public static BloodyFire.Suffix listSuffix(int account, long dialogId, TextPaint paint) {
+        BloodyConfig.load();
+        return BloodyConfig.streakInList ? BloodyStreaks.getInstance(account).getSuffix(dialogId, paint) : null;
+    }
+
+    /** Chat name in the dialogs list, colored by the fire tier when enabled. */
+    public static CharSequence listName(int account, long dialogId, CharSequence name) {
+        return BloodyStreaks.getInstance(account).colorName(name, dialogId);
+    }
+
+    /** Changes whenever the list fire/name of this chat looks different (DialogCell rebuilds its layout on change). */
+    public static int listHash(int account, long dialogId) {
+        BloodyConfig.load();
+        if (!BloodyConfig.streakInList && !BloodyConfig.streakNameColor || !DialogObject.isUserDialog(dialogId)) {
+            return 0;
+        }
+        BloodyStreaks streaks = BloodyStreaks.getInstance(account);
+        if (!streaks.shouldShow(dialogId)) {
+            return 0;
+        }
+        int streak = streaks.getStreak(dialogId);
+        int tier = BloodyFire.tier(streak, streaks.isAtRisk(dialogId));
+        return (streak << 6) + (tier << 2) + (BloodyConfig.streakInList ? 2 : 0) + (BloodyConfig.streakNameColor ? 1 : 0);
     }
 
     public static CharSequence headerTitle(int account, CharSequence title, long dialogId, TextPaint paint) {
-        EpicConfig.load();
-        return EpicConfig.streakInHeader ? EpicStreaks.getInstance(account).appendFire(title, dialogId, paint) : title;
+        BloodyConfig.load();
+        BloodyStreaks streaks = BloodyStreaks.getInstance(account);
+        title = streaks.colorName(title, dialogId);
+        return BloodyConfig.streakInHeader ? streaks.appendFire(title, dialogId, paint) : title;
     }
 
     public static CharSequence profileName(int account, CharSequence name, long dialogId, TextPaint paint) {
-        EpicConfig.load();
-        return EpicConfig.streakInProfile ? EpicStreaks.getInstance(account).appendFire(name, dialogId, paint) : name;
+        BloodyConfig.load();
+        BloodyStreaks streaks = BloodyStreaks.getInstance(account);
+        name = streaks.colorName(name, dialogId);
+        return BloodyConfig.streakInProfile ? streaks.appendFire(name, dialogId, paint) : name;
     }
 
     public static boolean hasProfileRow(int account, long dialogId) {
-        EpicConfig.load();
-        return EpicConfig.streakProfileRow && EpicStreaks.getInstance(account).shouldShow(dialogId);
+        BloodyConfig.load();
+        return BloodyConfig.streakProfileRow && BloodyStreaks.getInstance(account).shouldShow(dialogId);
     }
 
     /** "🔥 N дней" + "Огонёк · нажмите для статистики". */
     public static void bindProfileRow(TextDetailCell cell, int account, long dialogId, boolean divider) {
-        EpicStreaks streaks = EpicStreaks.getInstance(account);
+        BloodyStreaks streaks = BloodyStreaks.getInstance(account);
         int streak = streaks.getStreak(dialogId);
         boolean atRisk = streaks.isAtRisk(dialogId);
         int size = (int) (cell.textView.getPaint().getTextSize() * 1.05f);
-        SpannableStringBuilder text = new SpannableStringBuilder("🔥 ").append(EpicStrings.days(streak));
-        text.setSpan(new android.text.style.ImageSpan(EpicFire.drawable(Math.max(8, size), EpicFire.tier(streak, atRisk)), android.text.style.ImageSpan.ALIGN_BASELINE), 0, 2, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
-        String label = EpicStrings.get(streak > 0 && atRisk ? R.string.EpicFireProfileRisk : R.string.EpicFireProfileTap);
+        SpannableStringBuilder text = new SpannableStringBuilder("🔥 ").append(BloodyStrings.days(streak));
+        text.setSpan(new android.text.style.ImageSpan(BloodyFire.drawable(Math.max(8, size), BloodyFire.tier(streak, atRisk)), android.text.style.ImageSpan.ALIGN_BASELINE), 0, 2, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
+        String label = BloodyStrings.get(streak > 0 && atRisk ? R.string.BloodyFireProfileRisk : R.string.BloodyFireProfileTap);
         cell.setTextAndValue(text, label, divider);
         cell.setImage(null);
         cell.setImageClickListener(null);
@@ -84,14 +111,14 @@ public class EpicStreakUi {
 
     /** "Streak and initiative" item in the ⋮ menu; {@code lazy} for ChatActivity's lazily built header menu. */
     public static void addMenuItem(org.telegram.ui.ActionBar.ActionBarMenuItem menu, int account, long dialogId, boolean lazy) {
-        EpicConfig.load();
-        if (menu == null || !EpicConfig.streaksEnabled || !EpicStreaks.getInstance(account).isEligible(dialogId)) {
+        BloodyConfig.load();
+        if (menu == null || !BloodyConfig.streaksEnabled || !BloodyStreaks.getInstance(account).isEligible(dialogId)) {
             return;
         }
         if (lazy) {
-            menu.lazilyAddSubItem(MENU_ID, R.drawable.msg_stats, EpicStrings.get(R.string.EpicFireMenu));
+            menu.lazilyAddSubItem(MENU_ID, R.drawable.msg_stats, BloodyStrings.get(R.string.BloodyFireMenu));
         } else {
-            menu.addSubItem(MENU_ID, R.drawable.msg_stats, EpicStrings.get(R.string.EpicFireMenu));
+            menu.addSubItem(MENU_ID, R.drawable.msg_stats, BloodyStrings.get(R.string.BloodyFireMenu));
         }
     }
 
@@ -124,11 +151,11 @@ public class EpicStreakUi {
         }
 
         private static boolean hit(MotionEvent ev, SimpleTextView title, int account, long dialogId) {
-            EpicConfig.load();
-            if (title == null || !EpicConfig.streakInHeader) {
+            BloodyConfig.load();
+            if (title == null || !BloodyConfig.streakInHeader) {
                 return false;
             }
-            EpicFire.Suffix suffix = EpicStreaks.getInstance(account).getSuffix(dialogId, title.getPaint());
+            BloodyFire.Suffix suffix = BloodyStreaks.getInstance(account).getSuffix(dialogId, title.getPaint());
             if (suffix == null) {
                 return false;
             }
@@ -147,9 +174,9 @@ public class EpicStreakUi {
         if (fragment == null || fragment.getParentActivity() == null) {
             return;
         }
-        EpicStreaks streaks = EpicStreaks.getInstance(account);
+        BloodyStreaks streaks = BloodyStreaks.getInstance(account);
         if (!streaks.isEligible(dialogId)) {
-            BulletinFactory.of(fragment).createSimpleBulletin(R.raw.info, EpicStrings.get(R.string.EpicFireOnlyPrivate)).show();
+            BulletinFactory.of(fragment).createSimpleBulletin(R.raw.info, BloodyStrings.get(R.string.BloodyFireOnlyPrivate)).show();
             return;
         }
         TLRPC.User user = MessagesController.getInstance(account).getUser(dialogId);
@@ -159,33 +186,33 @@ public class EpicStreakUi {
 
         streaks.requestSyncIfStale(dialogId, true);
 
-        EpicStreakStats.Result[] last = new EpicStreakStats.Result[1];
+        BloodyStreakStats.Result[] last = new BloodyStreakStats.Result[1];
         Runnable redraw = () -> view.fill(streaks, dialogId, last[0]);
-        Utilities.Callback<EpicStreakStats.Result> listener = result -> {
+        Utilities.Callback<BloodyStreakStats.Result> listener = result -> {
             last[0] = result;
             redraw.run();
         };
         NotificationCenter.NotificationCenterDelegate observer = (id, acc, args) -> redraw.run();
-        NotificationCenter.getInstance(account).addObserver(observer, NotificationCenter.epicStreaksUpdated);
+        NotificationCenter.getInstance(account).addObserver(observer, NotificationCenter.bloodyStreaksUpdated);
 
         streaks.getStats(dialogId, stats -> {
             if (last[0] == null) {
-                EpicStreakStats.Result known = new EpicStreakStats.Result();
+                BloodyStreakStats.Result known = new BloodyStreakStats.Result();
                 known.stats = stats;
                 last[0] = known;
                 redraw.run();
             }
         });
         redraw.run();
-        EpicStreakStats.start(streaks, dialogId, listener);
+        BloodyStreakStats.start(streaks, dialogId, listener);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(EpicStrings.get(R.string.EpicFireTitle));
+        builder.setTitle(BloodyStrings.get(R.string.BloodyFireTitle));
         builder.setView(view.root);
-        builder.setPositiveButton(EpicStrings.get(R.string.EpicClose), null);
+        builder.setPositiveButton(BloodyStrings.get(R.string.BloodyClose), null);
         builder.setOnDismissListener(d -> {
-            NotificationCenter.getInstance(account).removeObserver(observer, NotificationCenter.epicStreaksUpdated);
-            EpicStreakStats.detach(streaks, dialogId, listener);
+            NotificationCenter.getInstance(account).removeObserver(observer, NotificationCenter.bloodyStreaksUpdated);
+            BloodyStreakStats.detach(streaks, dialogId, listener);
         });
         fragment.showDialog(builder.create());
     }
@@ -195,6 +222,7 @@ public class EpicStreakUi {
         final ImageView icon;
         final TextView streak, status, me, them, rule, progress, days, total, mine, theirs, deleted;
         final View barMe, barThem;
+        final ProgressBar scanBar;
         final String name;
         final int black, gray;
 
@@ -219,8 +247,14 @@ public class EpicStreakUi {
             root.addView(head, new LinearLayout.LayoutParams(-1, -2));
             status = text(context, 14, gray, false);
             root.addView(status, margins(4));
+            scanBar = new ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal);
+            scanBar.setIndeterminate(true);
+            scanBar.setIndeterminateTintList(ColorStateList.valueOf(Theme.getColor(Theme.key_featuredStickers_addButton)));
+            LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(-1, dp(4));
+            plp.topMargin = dp(8);
+            root.addView(scanBar, plp);
 
-            section(context, EpicStrings.get(R.string.EpicInitiative));
+            section(context, BloodyStrings.get(R.string.BloodyInitiative));
             LinearLayout pts = new LinearLayout(context);
             pts.setOrientation(LinearLayout.HORIZONTAL);
             me = text(context, 17, GREEN, true);
@@ -242,85 +276,94 @@ public class EpicStreakUi {
             root.addView(bar, blp);
 
             rule = text(context, 12, gray, false);
-            rule.setText(EpicStrings.get(R.string.EpicInitiativeRule));
+            rule.setText(BloodyStrings.get(R.string.BloodyInitiativeRule));
             root.addView(rule, margins(6));
             progress = text(context, 12, gray, false);
             root.addView(progress, new LinearLayout.LayoutParams(-1, -2));
 
-            section(context, EpicStrings.get(R.string.EpicStats));
-            days = row(context, EpicStrings.get(R.string.EpicStatsTalking));
-            total = row(context, EpicStrings.get(R.string.EpicStatsTotal));
-            mine = row(context, EpicStrings.get(R.string.EpicStatsMine));
-            theirs = row(context, EpicStrings.format(R.string.EpicStatsTheirs, name));
-            deleted = row(context, EpicStrings.get(R.string.EpicStatsDeleted));
+            section(context, BloodyStrings.get(R.string.BloodyStats));
+            days = row(context, BloodyStrings.get(R.string.BloodyStatsTalking));
+            total = row(context, BloodyStrings.get(R.string.BloodyStatsTotal));
+            mine = row(context, BloodyStrings.get(R.string.BloodyStatsMine));
+            theirs = row(context, BloodyStrings.format(R.string.BloodyStatsTheirs, name));
+            deleted = row(context, BloodyStrings.get(R.string.BloodyStatsDeleted));
         }
 
-        void fill(EpicStreaks streaks, long dialogId, EpicStreakStats.Result data) {
+        void fill(BloodyStreaks streaks, long dialogId, BloodyStreakStats.Result data) {
             int streakDays = streaks.getStreak(dialogId);
             boolean atRisk = streaks.isAtRisk(dialogId);
-            icon.setImageDrawable(EpicFire.drawable(dp(40), EpicFire.tier(streakDays, atRisk)));
-            streak.setText(EpicStrings.format(R.string.EpicFireDaysInRow, EpicStrings.days(streakDays)));
+            icon.setImageDrawable(BloodyFire.drawable(dp(40), BloodyFire.tier(streakDays, atRisk)));
+            streak.setText(BloodyStrings.format(R.string.BloodyFireDaysInRow, BloodyStrings.days(streakDays)));
             int flood = (int) Math.max(0, (streaks.floodUntil - System.currentTimeMillis()) / 1000);
-            if (!streaks.isCounted(dialogId)) {
-                status.setText(flood > 0 ? EpicStrings.format(R.string.EpicFireCountingFlood, EpicStrings.formatNumber(flood)) : EpicStrings.get(R.string.EpicFireCounting));
+            boolean counting = !streaks.isCounted(dialogId);
+            scanBar.setVisibility(counting ? View.VISIBLE : View.GONE);
+            if (counting) {
+                int checked = streaks.getScanProgress(dialogId);
+                if (flood > 0) {
+                    status.setText(BloodyStrings.format(R.string.BloodyFireCountingFlood, BloodyStrings.formatNumber(flood)));
+                } else if (checked > 0) {
+                    status.setText(BloodyStrings.format(R.string.BloodyFireCountingDays, BloodyStrings.days(checked)));
+                } else {
+                    status.setText(BloodyStrings.get(R.string.BloodyFireCounting));
+                }
             } else if (streakDays <= 0) {
-                status.setText(EpicStrings.get(R.string.EpicFireNone));
+                status.setText(BloodyStrings.get(R.string.BloodyFireNone));
             } else if (atRisk) {
-                status.setText(EpicStrings.get(R.string.EpicFireAtRisk));
+                status.setText(BloodyStrings.get(R.string.BloodyFireAtRisk));
             } else {
-                status.setText(EpicStrings.get(R.string.EpicFireBurning));
+                status.setText(BloodyStrings.get(R.string.BloodyFireBurning));
             }
             if (data == null || data.stats == null) {
                 return;
             }
-            EpicStreaks.Stats s = data.stats;
+            BloodyStreaks.Stats s = data.stats;
 
             int totalPts = s.me + s.th;
             int mePct = totalPts > 0 ? Math.round(s.me * 100f / totalPts) : 0;
             int themPct = totalPts > 0 ? 100 - mePct : 0;
-            me.setText(EpicStrings.format(R.string.EpicInitiativeMe, EpicStrings.formatNumber(s.me), mePct));
-            them.setText(EpicStrings.format(R.string.EpicInitiativeThem, EpicStrings.formatNumber(s.th), themPct, name));
+            me.setText(BloodyStrings.format(R.string.BloodyInitiativeMe, BloodyStrings.formatNumber(s.me), mePct));
+            them.setText(BloodyStrings.format(R.string.BloodyInitiativeThem, BloodyStrings.formatNumber(s.th), themPct, name));
             barMe.setLayoutParams(new LinearLayout.LayoutParams(0, -1, totalPts > 0 ? s.me : 1));
             barThem.setLayoutParams(new LinearLayout.LayoutParams(0, -1, totalPts > 0 ? s.th : 1));
 
             int counted = s.cm + s.ct;
             if (!data.done && flood > 0) {
-                progress.setText(EpicStrings.format(R.string.EpicStatsFlood, EpicStrings.formatNumber(flood)));
+                progress.setText(BloodyStrings.format(R.string.BloodyStatsFlood, BloodyStrings.formatNumber(flood)));
             } else if (!data.done) {
                 if (data.total > 0) {
                     int pct = Math.min(100, Math.round(counted * 100f / Math.max(1, data.total)));
-                    progress.setText(EpicStrings.format(R.string.EpicStatsCountingOf, EpicStrings.formatNumber(counted), EpicStrings.formatNumber(data.total), pct));
+                    progress.setText(BloodyStrings.format(R.string.BloodyStatsCountingOf, BloodyStrings.formatNumber(counted), BloodyStrings.formatNumber(data.total), pct));
                 } else if (counted > 0) {
-                    progress.setText(EpicStrings.format(R.string.EpicStatsCountingN, EpicStrings.formatNumber(counted)));
+                    progress.setText(BloodyStrings.format(R.string.BloodyStatsCountingN, BloodyStrings.formatNumber(counted)));
                 } else {
-                    progress.setText(EpicStrings.get(R.string.EpicStatsCounting));
+                    progress.setText(BloodyStrings.get(R.string.BloodyStatsCounting));
                 }
             } else if (data.failed) {
-                progress.setText(EpicStrings.get(R.string.EpicStatsFailed));
+                progress.setText(BloodyStrings.get(R.string.BloodyStatsFailed));
             } else if (data.paused) {
-                progress.setText(EpicStrings.get(R.string.EpicStatsPaused));
+                progress.setText(BloodyStrings.get(R.string.BloodyStatsPaused));
             } else {
                 progress.setText("");
             }
             progress.setVisibility(progress.getText().length() > 0 ? View.VISIBLE : View.GONE);
 
             if (s.first != 0) {
-                int talking = EpicStreaks.today() - EpicStreaks.dayOf(s.first) + 1;
+                int talking = BloodyStreaks.today() - BloodyStreaks.dayOf(s.first) + 1;
                 String since = new SimpleDateFormat("dd.MM.yyyy", Locale.US).format(new Date(s.first * 1000L));
-                days.setText(EpicStrings.format(R.string.EpicStatsSince, EpicStrings.days(talking), since));
+                days.setText(BloodyStrings.format(R.string.BloodyStatsSince, BloodyStrings.days(talking), since));
             } else if (data.done) {
                 days.setText("—");
             }
-            mine.setText(EpicStrings.formatNumber(s.cm));
-            theirs.setText(EpicStrings.formatNumber(s.ct));
+            mine.setText(BloodyStrings.formatNumber(s.cm));
+            theirs.setText(BloodyStrings.formatNumber(s.ct));
             if (data.done && !data.failed && !data.paused || data.total <= 0) {
-                total.setText(EpicStrings.formatNumber(counted)); // all counted: exactly the sum, without service messages
+                total.setText(BloodyStrings.formatNumber(counted)); // all counted: exactly the sum, without service messages
             } else {
-                total.setText(EpicStrings.formatNumber(data.total));
+                total.setText(BloodyStrings.formatNumber(data.total));
             }
-            EpicConfig.load();
-            String since = new SimpleDateFormat("dd.MM", Locale.US).format(new Date(EpicConfig.deletedSince * 1000L));
-            deleted.setText(EpicStrings.formatNumber(s.deleted) + " (" + (EpicStrings.isRussian() ? "с " : "since ") + since + ")");
+            BloodyConfig.load();
+            String since = new SimpleDateFormat("dd.MM", Locale.US).format(new Date(BloodyConfig.deletedSince * 1000L));
+            deleted.setText(BloodyStrings.formatNumber(s.deleted) + " (" + (BloodyStrings.isRussian() ? "с " : "since ") + since + ")");
         }
 
         private TextView text(Context context, int sp, int color, boolean bold) {

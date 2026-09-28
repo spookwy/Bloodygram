@@ -1,11 +1,11 @@
-package com.epicgram;
+package com.bloodygram;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 
 import org.telegram.messenger.ApplicationLoader;
 
-public class EpicConfig {
+public class BloodyConfig {
 
     private static final String PREFS = "epicgram_config";
 
@@ -18,6 +18,9 @@ public class EpicConfig {
     public static boolean streakInProfile;
     public static boolean streakProfileRow;
     public static boolean keepAlive;
+    public static boolean showPeerId;
+    public static boolean streakNameColor;
+    public static boolean chatSnow;
     /** Unix time when counting of deleted messages started (shown in the stats window). */
     public static int deletedSince;
 
@@ -27,7 +30,7 @@ public class EpicConfig {
         if (loaded) {
             return;
         }
-        synchronized (EpicConfig.class) {
+        synchronized (BloodyConfig.class) {
             if (loaded) {
                 return;
             }
@@ -41,6 +44,9 @@ public class EpicConfig {
             streakInProfile = prefs.getBoolean("streakInProfile", true);
             streakProfileRow = prefs.getBoolean("streakProfileRow", true);
             keepAlive = prefs.getBoolean("keepAlive", true);
+            showPeerId = prefs.getBoolean("showPeerId", true);
+            streakNameColor = prefs.getBoolean("streakNameColor", true);
+            chatSnow = prefs.getBoolean("chatSnow", true);
             deletedSince = prefs.getInt("deletedSince", 0);
             if (deletedSince == 0) {
                 deletedSince = (int) (System.currentTimeMillis() / 1000);
@@ -85,6 +91,29 @@ public class EpicConfig {
 
     public static void setKeepAlive(boolean value) {
         putBoolean("keepAlive", keepAlive = value);
+    }
+
+    public static void setShowPeerId(boolean value) {
+        putBoolean("showPeerId", showPeerId = value);
+    }
+
+    public static void setStreakNameColor(boolean value) {
+        putBoolean("streakNameColor", streakNameColor = value);
+    }
+
+    /** Falling snow on the chat background all year (Telegram shows it only on holidays). */
+    public static boolean isChatSnow() {
+        load();
+        return chatSnow;
+    }
+
+    /** Snow is on and particles are allowed by Lite Mode (the holiday snow needs the "high" preset only). */
+    public static boolean isChatSnowAllowed() {
+        return isChatSnow() && org.telegram.messenger.LiteMode.isEnabled(org.telegram.messenger.LiteMode.FLAG_PARTICLES);
+    }
+
+    public static void setChatSnow(boolean value) {
+        putBoolean("chatSnow", chatSnow = value);
     }
 
     private static void putBoolean(String key, boolean value) {

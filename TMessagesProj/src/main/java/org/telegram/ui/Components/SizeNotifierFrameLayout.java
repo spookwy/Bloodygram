@@ -250,6 +250,7 @@ public class SizeNotifierFrameLayout extends FrameLayout implements Theme.Colora
                         int bottom = (int) (getRootView().getMeasuredHeight() - backgroundTranslationY + translationY);
                         drawable.setBounds(0, 0, getMeasuredWidth(), bottom);
                         drawable.draw(canvas);
+                        checkSnowflake(canvas); // Bloodygram: snow on gradient wallpapers without a pattern too
                         if (bottomClip != 0) {
                             canvas.restore();
                         }
@@ -558,7 +559,7 @@ public class SizeNotifierFrameLayout extends FrameLayout implements Theme.Colora
     }
 
     private void checkSnowflake(Canvas canvas) {
-        if (backgroundView != null && Theme.canStartHolidayAnimation() && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+        if (backgroundView != null && (Theme.canStartHolidayAnimation() && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND) || com.bloodygram.BloodyConfig.isChatSnowAllowed())) { // Bloodygram: isChatSnowAllowed
             if (snowflakesEffect == null) {
                 snowflakesEffect = new SnowflakesEffect(1);
                 snowflakesEffect.setForcedColor(0xFFFFFFFF);

@@ -1,4 +1,4 @@
-package com.epicgram.keepalive;
+package com.bloodygram.keepalive;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -13,8 +13,8 @@ import android.os.IBinder;
 
 import androidx.core.app.NotificationCompat;
 
-import com.epicgram.EpicConfig;
-import com.epicgram.EpicStrings;
+import com.bloodygram.BloodyConfig;
+import com.bloodygram.BloodyStrings;
 
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
@@ -28,7 +28,7 @@ import org.telegram.ui.LaunchActivity;
  * Foreground service that keeps the process and Telegram's push connection alive
  * without Firebase: updates (and messages that get deleted later) arrive while the app is closed.
  */
-public class EpicKeepAliveService extends Service {
+public class BloodyKeepAliveService extends Service {
 
     private static final String CHANNEL_ID = "epicgram_keep_alive";
     private static final int NOTIFICATION_ID = 0x0E91C;
@@ -36,13 +36,13 @@ public class EpicKeepAliveService extends Service {
     /**
      * Hook for {@code ApplicationLoader.startPushService()}.
      *
-     * @return true if Epicgram handled it and the upstream service must not be started
+     * @return true if Bloodygram handled it and the upstream service must not be started
      */
     public static boolean onStartPushService() {
-        EpicConfig.load();
+        BloodyConfig.load();
         Context context = ApplicationLoader.applicationContext;
-        Intent intent = new Intent(context, EpicKeepAliveService.class);
-        if (!EpicConfig.keepAlive) {
+        Intent intent = new Intent(context, BloodyKeepAliveService.class);
+        if (!BloodyConfig.keepAlive) {
             context.stopService(intent);
             return false;
         }
@@ -70,7 +70,7 @@ public class EpicKeepAliveService extends Service {
 
     public static void stop() {
         Context context = ApplicationLoader.applicationContext;
-        context.stopService(new Intent(context, EpicKeepAliveService.class));
+        context.stopService(new Intent(context, BloodyKeepAliveService.class));
     }
 
     @Override
@@ -99,7 +99,7 @@ public class EpicKeepAliveService extends Service {
     private Notification buildNotification() {
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= 26 && manager.getNotificationChannel(CHANNEL_ID) == null) {
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, EpicStrings.get(R.string.EpicKeepAliveChannel), NotificationManager.IMPORTANCE_MIN);
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, BloodyStrings.get(R.string.BloodyKeepAliveChannel), NotificationManager.IMPORTANCE_MIN);
             channel.setShowBadge(false);
             channel.enableVibration(false);
             channel.setSound(null, null);
@@ -110,8 +110,8 @@ public class EpicKeepAliveService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, open, PendingIntent.FLAG_IMMUTABLE);
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.notification)
-                .setContentTitle(EpicStrings.get(R.string.EpicKeepAliveTitle))
-                .setContentText(EpicStrings.get(R.string.EpicKeepAliveText))
+                .setContentTitle(BloodyStrings.get(R.string.BloodyKeepAliveTitle))
+                .setContentText(BloodyStrings.get(R.string.BloodyKeepAliveText))
                 .setPriority(NotificationCompat.PRIORITY_MIN)
                 .setOngoing(true)
                 .setShowWhen(false)
