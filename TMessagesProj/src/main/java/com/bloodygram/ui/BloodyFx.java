@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -25,6 +26,8 @@ import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.SnowflakesEffect;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.WeakHashMap;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
@@ -171,18 +174,14 @@ public class BloodyFx {
     }
 
     /**
-     * Slowly drifting red contour lines on black, like a topographic map. A coarse value-noise field is
-     * sampled on a grid and its iso-lines (marching squares, one threshold band at a time) are stroked
-     * with rounded joins/caps for softer curves; the sample window orbits gently around a fixed center
-     * (instead of drifting off in one direction forever) and also shifts with the chat's own scroll, so
-     * swiping the message list visibly moves the map too.
+     * Contour lines on black, like a topographic map. A value-noise field is sampled on a grid and its
+     * iso-lines (marching squares) are stitched into continuous, midpoint-smoothed paths — no dots at cell
+     * joins and no visible corners. The pattern is static (it does not drift), so it is computed once and cached.
      */
     private static class TopoMap {
-        private static final int CELL_DP = 22;   // grid resolution: bigger = cheaper, coarser lines
-        private static final int BANDS = 9;       // number of stacked contour levels
-        private static final float ORBIT_MS = 26000f; // one full lazy loop of the sample window
-        private static final float ORBIT_RADIUS = 0.9f; // noise-space radius of the orbit (center never runs away)
-        private static final float SCROLL_FOLLOW = 0.35f; // how much of the wallpaper's own scroll offset leaks into the field
+        private static final int CELL_DP = 26;   // grid resolution: bigger = coarser, rounder lines
+        private static final int BANDS = 6;       // number of stacked contour levels (fewer = sparser)
+        private static final float FREQ = 0.0042f; // noise frequency: lower = broader, more spaced-out contours
 
         private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint backdrop = new Paint();
@@ -190,10 +189,7 @@ public class BloodyFx {
         private int cols, rows;
         private float cell;
         private int w, h;
-        private long start;
-        private long lastFrame;
         private Bitmap frameBitmap;
-        private Canvas frameCanvas;
 
         TopoMap() {
             line.setStyle(Paint.Style.STROKE);
@@ -201,91 +197,183 @@ public class BloodyFx {
             line.setStrokeJoin(Paint.Join.ROUND);
             line.setStrokeCap(Paint.Cap.ROUND);
             line.setColor(0xFFB01A2C);
-            backdrop.setColor(0xFF050303); // full-background mode: paint over the wallpaper underneath, like a map
+            backdrop.setColor(0xFF050303); // paint over the wallpaper underneath, like a map
         }
 
-        private static final int FRAME_INTERVAL = 90; // ms; a slow crawl doesn't need 60fps recompute
-
         void draw(View view, Canvas canvas, int scrollOffset) {
-            if (w != view.getWidth() || h != view.getHeight()) {
+            if (frameBitmap == null || w != view.getWidth() || h != view.getHeight()) {
                 w = view.getWidth();
                 h = view.getHeight();
                 if (w == 0 || h == 0) {
                     return;
                 }
-                cell = dp(CELL_DP);
-                cols = (int) (w / cell) + 3;
-                rows = (int) (h / cell) + 3;
-                field = new float[rows][cols];
-                start = SystemClock.uptimeMillis();
-                lastFrame = 0;
-                if (frameBitmap != null) {
-                    frameBitmap.recycle();
-                }
-                frameBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-                frameCanvas = new Canvas(frameBitmap);
-            }
-            long now = SystemClock.uptimeMillis();
-            if (now - lastFrame >= FRAME_INTERVAL) {
-                // recompute the noise field and redraw the cached bitmap only every FRAME_INTERVAL;
-                // a slow crawl doesn't need 60fps marching-squares recompute
-                lastFrame = now;
-                float phase = ((now - start) % ORBIT_MS) / ORBIT_MS * (float) (Math.PI * 2);
-                // orbit around a fixed center in noise-space, so the pattern never runs off-screen in one direction
-                float ox = (float) Math.cos(phase) * ORBIT_RADIUS;
-                float oy = (float) Math.sin(phase) * ORBIT_RADIUS;
-                // fold the chat's scroll into the same noise-space offset, scaled down and by dp so a full-height
-                // swipe shifts the map a noticeable but not disorienting amount
-                float scrollNoise = -scrollOffset / dp(1) * SCROLL_FOLLOW * 0.006f;
-                for (int r = 0; r < rows; r++) {
-                    for (int c = 0; c < cols; c++) {
-                        field[r][c] = noise(c * cell * 0.006f + ox, r * cell * 0.006f + oy + scrollNoise);
-                    }
-                }
-                frameCanvas.drawRect(0, 0, w, h, backdrop);
-                for (int band = 0; band < BANDS; band++) {
-                    float threshold = (band + 0.5f) / BANDS;
-                    line.setAlpha(band == BANDS / 2 ? 130 : 90);
-                    for (int r = 0; r < rows - 1; r++) {
-                        for (int c = 0; c < cols - 1; c++) {
-                            marchCell(frameCanvas, r, c, threshold);
-                        }
-                    }
-                }
+                render();
             }
             canvas.drawBitmap(frameBitmap, 0, 0, null);
-            view.postInvalidateOnAnimation();
         }
 
-        /** One cell of marching squares: draws the segment(s) where the field crosses {@code threshold}. */
-        private void marchCell(Canvas canvas, int r, int c, float threshold) {
-            float x0 = c * cell, y0 = r * cell, x1 = x0 + cell, y1 = y0 + cell;
-            float tl = field[r][c], tr = field[r][c + 1], bl = field[r + 1][c], br = field[r + 1][c + 1];
-            int mask = (tl > threshold ? 8 : 0) | (tr > threshold ? 4 : 0) | (br > threshold ? 2 : 0) | (bl > threshold ? 1 : 0);
-            if (mask == 0 || mask == 15) {
+        private void render() {
+            cell = dp(CELL_DP);
+            cols = (int) (w / cell) + 3;
+            rows = (int) (h / cell) + 3;
+            field = new float[rows][cols];
+            for (int r = 0; r < rows; r++) {
+                for (int c = 0; c < cols; c++) {
+                    field[r][c] = noise(c * cell * FREQ, r * cell * FREQ);
+                }
+            }
+            if (frameBitmap != null) {
+                frameBitmap.recycle();
+            }
+            frameBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            Canvas fc = new Canvas(frameBitmap);
+            fc.drawRect(0, 0, w, h, backdrop);
+            Path path = new Path();
+            for (int band = 0; band < BANDS; band++) {
+                float threshold = (band + 0.5f) / BANDS;
+                line.setAlpha(band == BANDS / 2 ? 120 : 80);
+                buildContours(threshold, path);
+                fc.drawPath(path, line);
+            }
+        }
+
+        // Each grid edge has a unique key, so a crossing on a shared edge matches exactly between the two
+        // cells and their segments stitch into one continuous line instead of two capped stubs (the "dots").
+        private long hKey(int r, int c) {
+            return ((long) r * cols + c) * 2L;
+        }
+
+        private long vKey(int r, int c) {
+            return ((long) r * cols + c) * 2L + 1L;
+        }
+
+        private void buildContours(float threshold, Path out) {
+            out.reset();
+            HashMap<Long, float[]> pts = new HashMap<>();
+            HashMap<Long, ArrayList<Long>> adj = new HashMap<>();
+            for (int r = 0; r < rows - 1; r++) {
+                for (int c = 0; c < cols - 1; c++) {
+                    float tl = field[r][c], tr = field[r][c + 1], bl = field[r + 1][c], br = field[r + 1][c + 1];
+                    int mask = (tl > threshold ? 8 : 0) | (tr > threshold ? 4 : 0) | (br > threshold ? 2 : 0) | (bl > threshold ? 1 : 0);
+                    if (mask == 0 || mask == 15) {
+                        continue;
+                    }
+                    switch (mask) {
+                        case 1: case 14: link(pts, adj, left(r, c, threshold), bottom(r, c, threshold)); break;
+                        case 2: case 13: link(pts, adj, bottom(r, c, threshold), right(r, c, threshold)); break;
+                        case 3: case 12: link(pts, adj, left(r, c, threshold), right(r, c, threshold)); break;
+                        case 4: case 11: link(pts, adj, top(r, c, threshold), right(r, c, threshold)); break;
+                        case 6: case 9:  link(pts, adj, top(r, c, threshold), bottom(r, c, threshold)); break;
+                        case 7: case 8:  link(pts, adj, left(r, c, threshold), top(r, c, threshold)); break;
+                        case 5:
+                            link(pts, adj, left(r, c, threshold), top(r, c, threshold));
+                            link(pts, adj, bottom(r, c, threshold), right(r, c, threshold));
+                            break;
+                        case 10:
+                            link(pts, adj, top(r, c, threshold), right(r, c, threshold));
+                            link(pts, adj, left(r, c, threshold), bottom(r, c, threshold));
+                            break;
+                        default: break;
+                    }
+                }
+            }
+            trace(pts, adj, out);
+        }
+
+        // edge crossing points keyed by their shared-edge id
+        private long[] top(int r, int c, float th) {
+            return new long[]{hKey(r, c), Float.floatToRawIntBits(lerp(c * cell, (c + 1) * cell, invLerp(field[r][c], field[r][c + 1], th))), Float.floatToRawIntBits(r * cell)};
+        }
+
+        private long[] bottom(int r, int c, float th) {
+            return new long[]{hKey(r + 1, c), Float.floatToRawIntBits(lerp(c * cell, (c + 1) * cell, invLerp(field[r + 1][c], field[r + 1][c + 1], th))), Float.floatToRawIntBits((r + 1) * cell)};
+        }
+
+        private long[] left(int r, int c, float th) {
+            return new long[]{vKey(r, c), Float.floatToRawIntBits(c * cell), Float.floatToRawIntBits(lerp(r * cell, (r + 1) * cell, invLerp(field[r][c], field[r + 1][c], th)))};
+        }
+
+        private long[] right(int r, int c, float th) {
+            return new long[]{vKey(r, c + 1), Float.floatToRawIntBits((c + 1) * cell), Float.floatToRawIntBits(lerp(r * cell, (r + 1) * cell, invLerp(field[r][c + 1], field[r + 1][c + 1], th)))};
+        }
+
+        private void link(HashMap<Long, float[]> pts, HashMap<Long, ArrayList<Long>> adj, long[] a, long[] b) {
+            long ka = a[0], kb = b[0];
+            pts.put(ka, new float[]{Float.intBitsToFloat((int) a[1]), Float.intBitsToFloat((int) a[2])});
+            pts.put(kb, new float[]{Float.intBitsToFloat((int) b[1]), Float.intBitsToFloat((int) b[2])});
+            adj.computeIfAbsent(ka, k -> new ArrayList<>()).add(kb);
+            adj.computeIfAbsent(kb, k -> new ArrayList<>()).add(ka);
+        }
+
+        /** Walks the segment graph into polylines and appends each, midpoint-smoothed, to {@code out}. */
+        private void trace(HashMap<Long, float[]> pts, HashMap<Long, ArrayList<Long>> adj, Path out) {
+            ArrayList<float[]> poly = new ArrayList<>();
+            while (!adj.isEmpty()) {
+                Long start = null;
+                for (HashMap.Entry<Long, ArrayList<Long>> e : adj.entrySet()) {
+                    if (e.getValue().size() == 1) {
+                        start = e.getKey();
+                        break;
+                    }
+                }
+                if (start == null) {
+                    start = adj.keySet().iterator().next();
+                }
+                poly.clear();
+                poly.add(pts.get(start));
+                Long cur = start;
+                while (true) {
+                    ArrayList<Long> ns = adj.get(cur);
+                    if (ns == null || ns.isEmpty()) {
+                        adj.remove(cur);
+                        break;
+                    }
+                    Long next = ns.get(0);
+                    removeEdge(adj, cur, next);
+                    poly.add(pts.get(next));
+                    if (next.equals(start)) {
+                        break;
+                    }
+                    cur = next;
+                }
+                smoothInto(out, poly);
+            }
+        }
+
+        private void removeEdge(HashMap<Long, ArrayList<Long>> adj, Long a, Long b) {
+            ArrayList<Long> la = adj.get(a);
+            if (la != null) {
+                la.remove(b);
+                if (la.isEmpty()) {
+                    adj.remove(a);
+                }
+            }
+            ArrayList<Long> lb = adj.get(b);
+            if (lb != null) {
+                lb.remove(a);
+                if (lb.isEmpty()) {
+                    adj.remove(b);
+                }
+            }
+        }
+
+        /** Quadratic midpoint smoothing so the polyline reads as a smooth curve, not chained straight bits. */
+        private void smoothInto(Path out, ArrayList<float[]> poly) {
+            int n = poly.size();
+            if (n < 2) {
                 return;
             }
-            float top = lerp(x0, x1, invLerp(tl, tr, threshold));
-            float bottom = lerp(x0, x1, invLerp(bl, br, threshold));
-            float left = lerp(y0, y1, invLerp(tl, bl, threshold));
-            float right = lerp(y0, y1, invLerp(tr, br, threshold));
-            switch (mask) {
-                case 1: case 14: canvas.drawLine(x0, left, bottom, y1, line); break;
-                case 2: case 13: canvas.drawLine(bottom, y1, x1, right, line); break;
-                case 3: case 12: canvas.drawLine(x0, left, x1, right, line); break;
-                case 4: case 11: canvas.drawLine(top, y0, x1, right, line); break;
-                case 6: case 9: canvas.drawLine(top, y0, bottom, y1, line); break;
-                case 7: case 8: canvas.drawLine(x0, left, top, y0, line); break;
-                case 5: // saddle: two separate segments
-                    canvas.drawLine(x0, left, top, y0, line);
-                    canvas.drawLine(bottom, y1, x1, right, line);
-                    break;
-                case 10:
-                    canvas.drawLine(top, y0, x1, right, line);
-                    canvas.drawLine(x0, left, bottom, y1, line);
-                    break;
-                default: break;
+            out.moveTo(poly.get(0)[0], poly.get(0)[1]);
+            if (n == 2) {
+                out.lineTo(poly.get(1)[0], poly.get(1)[1]);
+                return;
             }
+            for (int i = 1; i < n - 1; i++) {
+                float mx = (poly.get(i)[0] + poly.get(i + 1)[0]) / 2f;
+                float my = (poly.get(i)[1] + poly.get(i + 1)[1]) / 2f;
+                out.quadTo(poly.get(i)[0], poly.get(i)[1], mx, my);
+            }
+            out.lineTo(poly.get(n - 1)[0], poly.get(n - 1)[1]);
         }
 
         private static float lerp(float a, float b, float t) {

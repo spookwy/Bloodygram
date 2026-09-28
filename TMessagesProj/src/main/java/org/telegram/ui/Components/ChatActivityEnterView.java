@@ -3505,6 +3505,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 updateAttachButtonTranslationX();
             }
         };
+        sendButton.bloodyTransparent = true; // Bloodygram: transparent send button, white plane only
         sendButton.setVisibility(INVISIBLE);
         sendButton.setContentDescription(getString(R.string.Send));
         sendButton.setSoundEffectsEnabled(false);
@@ -6503,7 +6504,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
     }
 
-    public static final int DEFAULT_HEIGHT = 44;
+    public static final int DEFAULT_HEIGHT = 46; // Bloodygram: slightly taller compose row
 
     private boolean resizeForTopViewLastShow;
     private void resizeForTopView(boolean show) {
@@ -14963,6 +14964,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
 
         private boolean isNewDesignSendButton;
+        public boolean bloodyTransparent; // Bloodygram: draw only the white plane icon, no filled capsule
 
         public SendButton(Context context, int resId, Theme.ResourcesProvider resourcesProvider, boolean isNewDesignSendButton) {
             super(context);
@@ -15206,7 +15208,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
             updateColors();
             checkBackgroundRect();
-            if (isNewDesignSendButton) {
+            if (isNewDesignSendButton && !bloodyTransparent) { // Bloodygram: transparent send button
                 canvas.drawRoundRect(backgroundRect, dp(RADIUS), dp(RADIUS), backgroundPaint);
             }
 
