@@ -132,9 +132,12 @@ public class BloodyFx {
 
     /**
      * Draws the chosen particles over the chat background.
+     * @param scrollOffset the wallpaper's current scroll-driven parallax translation (same signal
+     *                     Telegram uses to shift the wallpaper on message-list scroll/swipe), used
+     *                     by the topo map to shift its contours with the chat instead of sitting still
      * @return true if Bloodygram handled it (Telegram's own holiday snow is skipped then)
      */
-    public static boolean drawChatParticles(View view, Canvas canvas) {
+    public static boolean drawChatParticles(View view, Canvas canvas, int scrollOffset) {
         if (view == null) {
             return false;
         }
@@ -157,7 +160,7 @@ public class BloodyFx {
             if (!(system instanceof TopoMap)) {
                 systems.put(view, system = new TopoMap());
             }
-            ((TopoMap) system).draw(view, canvas);
+            ((TopoMap) system).draw(view, canvas, scrollOffset);
             return true;
         }
         if (!(system instanceof Particles) || ((Particles) system).mode != mode) {
@@ -169,13 +172,17 @@ public class BloodyFx {
 
     /**
      * Slowly drifting red contour lines on black, like a topographic map. A coarse value-noise field is
-     * sampled on a grid and its iso-lines (marching squares, one threshold band at a time) are stroked;
-     * the whole field scrolls diagonally over time so the contours crawl, like the animated GLSL reference.
+     * sampled on a grid and its iso-lines (marching squares, one threshold band at a time) are stroked
+     * with rounded joins/caps for softer curves; the sample window orbits gently around a fixed center
+     * (instead of drifting off in one direction forever) and also shifts with the chat's own scroll, so
+     * swiping the message list visibly moves the map too.
      */
     private static class TopoMap {
         private static final int CELL_DP = 22;   // grid resolution: bigger = cheaper, coarser lines
         private static final int BANDS = 9;       // number of stacked contour levels
-        private static final float SPEED = 0.008f; // dp/ms drift of the noise field
+        private static final float ORBIT_MS = 26000f; // one full lazy loop of the sample window
+        private static final float ORBIT_RADIUS = 0.9f; // noise-space radius of the orbit (center never runs away)
+        private static final float SCROLL_FOLLOW = 0.35f; // how much of the wallpaper's own scroll offset leaks into the field
 
         private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint backdrop = new Paint();
@@ -190,14 +197,16 @@ public class BloodyFx {
 
         TopoMap() {
             line.setStyle(Paint.Style.STROKE);
-            line.setStrokeWidth(dp(1));
+            line.setStrokeWidth(dp(1.6f));
+            line.setStrokeJoin(Paint.Join.ROUND);
+            line.setStrokeCap(Paint.Cap.ROUND);
             line.setColor(0xFFB01A2C);
             backdrop.setColor(0xFF050303); // full-background mode: paint over the wallpaper underneath, like a map
         }
 
         private static final int FRAME_INTERVAL = 90; // ms; a slow crawl doesn't need 60fps recompute
 
-        void draw(View view, Canvas canvas) {
+        void draw(View view, Canvas canvas, int scrollOffset) {
             if (w != view.getWidth() || h != view.getHeight()) {
                 w = view.getWidth();
                 h = view.getHeight();
@@ -221,11 +230,16 @@ public class BloodyFx {
                 // recompute the noise field and redraw the cached bitmap only every FRAME_INTERVAL;
                 // a slow crawl doesn't need 60fps marching-squares recompute
                 lastFrame = now;
-                float t = (now - start) * SPEED;
-                float ox = -t, oy = -t * 0.6f;
+                float phase = ((now - start) % ORBIT_MS) / ORBIT_MS * (float) (Math.PI * 2);
+                // orbit around a fixed center in noise-space, so the pattern never runs off-screen in one direction
+                float ox = (float) Math.cos(phase) * ORBIT_RADIUS;
+                float oy = (float) Math.sin(phase) * ORBIT_RADIUS;
+                // fold the chat's scroll into the same noise-space offset, scaled down and by dp so a full-height
+                // swipe shifts the map a noticeable but not disorienting amount
+                float scrollNoise = -scrollOffset / dp(1) * SCROLL_FOLLOW * 0.006f;
                 for (int r = 0; r < rows; r++) {
                     for (int c = 0; c < cols; c++) {
-                        field[r][c] = noise((c * cell + ox) * 0.006f, (r * cell + oy) * 0.006f);
+                        field[r][c] = noise(c * cell * 0.006f + ox, r * cell * 0.006f + oy + scrollNoise);
                     }
                 }
                 frameCanvas.drawRect(0, 0, w, h, backdrop);
@@ -285,8 +299,15 @@ public class BloodyFx {
             return Utilities.clamp((v - a) / (b - a), 1f, 0f);
         }
 
-        /** Smoothed value noise (bilinear-interpolated hash grid), cheap and seamless enough for a slow drift. */
+        /**
+         * Smoothed value noise, blended from two octaves (a coarse one plus a lighter fine one) so the
+         * contour bends are rounder and less blocky than a single hash-grid octave produces.
+         */
         private static float noise(float x, float y) {
+            return noiseOctave(x, y) * 0.75f + noiseOctave(x * 2.13f + 11.7f, y * 2.13f + 5.3f) * 0.25f;
+        }
+
+        private static float noiseOctave(float x, float y) {
             int ix = (int) Math.floor(x), iy = (int) Math.floor(y);
             float fx = x - ix, fy = y - iy;
             fx = fx * fx * (3 - 2 * fx);

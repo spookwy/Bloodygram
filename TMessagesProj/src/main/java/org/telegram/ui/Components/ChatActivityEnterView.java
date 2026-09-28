@@ -5326,8 +5326,29 @@ public class ChatActivityEnterView extends FrameLayout implements
     private boolean messageEditTextEnabled = true;
 
     private class ChatActivityEditTextCaption extends EditTextCaption {
+        private final com.bloodygram.ui.BloodyCaret bloodyCaret = new com.bloodygram.ui.BloodyCaret(this); // Bloodygram: smooth-gliding cursor
+        private Boolean bloodySmoothCursorApplied; // Bloodygram: only touch setAllowDrawCursor (which unconditionally invalidates) when the state actually flips
+
         public ChatActivityEditTextCaption(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context, resourcesProvider);
+        }
+
+        @Override
+        protected void onDraw(android.graphics.Canvas canvas) { // Bloodygram: smooth-gliding cursor instead of the stock one, which jumps
+            boolean smooth = com.bloodygram.ui.BloodyCaret.enabled();
+            if (bloodySmoothCursorApplied == null || bloodySmoothCursorApplied != smooth) {
+                bloodySmoothCursorApplied = smooth;
+                setAllowDrawCursor(!smooth); // unconditionally invalidates — only call on an actual change, or this becomes an infinite redraw loop
+            }
+            super.onDraw(canvas);
+            if (smooth) {
+                // EditTextCaption.onDraw() already translate(0, offsetY)'d and restored around its own super.onDraw();
+                // match that same transform here so the caret lines up with the text at any offsetY
+                canvas.save();
+                canvas.translate(0, offsetY);
+                bloodyCaret.draw(canvas);
+                canvas.restore();
+            }
         }
 
         CanvasButton canvasButton;

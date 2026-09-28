@@ -559,7 +559,7 @@ public class SizeNotifierFrameLayout extends FrameLayout implements Theme.Colora
     }
 
     private void checkSnowflake(Canvas canvas) {
-        if (com.bloodygram.ui.BloodyFx.drawChatParticles(backgroundView, canvas)) { // Bloodygram: snow / embers / ash / sparks
+        if (com.bloodygram.ui.BloodyFx.drawChatParticles(backgroundView, canvas, backgroundTranslationY)) { // Bloodygram: snow / embers / ash / sparks / topo map (scroll-reactive)
             return;
         }
         if (backgroundView != null && Theme.canStartHolidayAnimation() && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
