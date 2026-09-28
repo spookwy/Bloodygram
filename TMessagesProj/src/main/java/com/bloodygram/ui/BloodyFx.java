@@ -167,11 +167,9 @@ public class BloodyFx {
         final int count;
         final float[] x, y, vx, vy, size, phase, life, born;
         final int[] color, ci;
-        final PorterDuffColorFilter[] sparkFilters;
         final RectF rect = new RectF();
         final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         final Paint bottom = new Paint();
-        Bitmap glow;
         long lastTime;
         int w, h;
 
@@ -189,19 +187,7 @@ public class BloodyFx {
             color = new int[count];
             ci = new int[count];
             if (mode == BloodyConfig.PARTICLES_SPARKS) {
-                paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.ADD));
                 bottom.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.ADD));
-                sparkFilters = new PorterDuffColorFilter[SPARK_COLORS.length];
-                for (int k = 0; k < SPARK_COLORS.length; k++) {
-                    sparkFilters[k] = new PorterDuffColorFilter(SPARK_COLORS[k], PorterDuff.Mode.SRC_IN);
-                }
-                int s = dp(14);
-                glow = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888);
-                Paint g = new Paint(Paint.ANTI_ALIAS_FLAG);
-                g.setShader(new RadialGradient(s / 2f, s / 2f, s / 2f, new int[]{0xFFFFFFFF, 0x66FFFFFF, 0x00FFFFFF}, new float[]{0f, 0.4f, 1f}, Shader.TileMode.CLAMP));
-                new Canvas(glow).drawCircle(s / 2f, s / 2f, s / 2f, g);
-            } else {
-                sparkFilters = null;
             }
         }
 
@@ -251,7 +237,6 @@ public class BloodyFx {
             lastTime = nowMs;
 
             if (mode == BloodyConfig.PARTICLES_SPARKS) {
-                bottom.setAlpha((int) (200 * (0.82f + 0.18f * (float) Math.sin(nowMs / 160.0))));
                 canvas.drawRect(0, h - h * 0.32f, w, h, bottom);
             }
 
@@ -278,15 +263,20 @@ public class BloodyFx {
                     canvas.rotate(age / 20f + phase[i] * 57, x[i], y[i]);
                     canvas.drawRect(x[i] - size[i], y[i] - size[i] * 0.6f, x[i] + size[i], y[i] + size[i] * 0.6f, paint);
                     canvas.restore();
-                } else { // sparks
+                } else { // sparks — crisp glowing embers
                     float heightFade = Math.max(0.12f, Math.min(1f, y[i] / (h * 0.85f))); // dimmer higher up
                     float flicker = 0.6f + 0.4f * (float) Math.sin(age / 130f + phase[i] * 3);
-                    paint.setColorFilter(sparkFilters[ci[i]]);
+                    paint.setColorFilter(null);
+                    paint.setColor(SPARK_COLORS[ci[i]]);
                     paint.setAlpha((int) (255 * a * heightFade * flicker));
-                    float sw = size[i] * 2.4f;
-                    float stretch = 1f + Math.min(3.2f, -vy[i] * 26f); // faster embers streak upward
-                    rect.set(x[i] - sw, y[i] - sw * stretch, x[i] + sw, y[i] + sw);
-                    canvas.drawBitmap(glow, null, rect, paint);
+                    float r = size[i];
+                    float stretch = 1f + Math.min(2.6f, -vy[i] * 22f); // faster embers become short streaks
+                    if (stretch > 1.4f) {
+                        rect.set(x[i] - r, y[i] - r * stretch, x[i] + r, y[i] + r);
+                        canvas.drawRoundRect(rect, r, r, paint);
+                    } else {
+                        canvas.drawCircle(x[i], y[i], r, paint);
+                    }
                 }
             }
             view.invalidate();

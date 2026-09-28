@@ -98,38 +98,6 @@ public class BloodyFire {
         return tier <= TIER_GRAY || tier >= TIER_COLORS.length ? 0 : TIER_COLORS[tier][2];
     }
 
-    /** Flame palette of the tier, or null for gray/unknown. */
-    public static int[] palette(int tier) {
-        return tier <= TIER_GRAY || tier >= TIER_COLORS.length ? null : TIER_COLORS[tier];
-    }
-
-    /**
-     * Paints text with the tier's flame colours (bright tongue on top, deep base below) so the name
-     * itself looks like it is on fire. The gradient is tiled, so it shows on the glyphs wherever they sit.
-     */
-    public static class NameFlame extends android.text.style.CharacterStyle implements android.text.style.UpdateAppearance {
-        private final int[] band;
-        private final int glow;
-
-        public NameFlame(int[] tier) {
-            // seamless fire band: deep base -> red -> bright yellow -> white-hot core -> back down, so REPEAT tiles cleanly
-            band = new int[]{tier[0], tier[1], tier[3], 0xFFFFF4D0, tier[3], tier[1], tier[0]};
-            glow = 0x99000000 | (tier[1] & 0x00FFFFFF);
-        }
-
-        @Override
-        public void updateDrawState(TextPaint tp) {
-            float s = tp.getTextSize();
-            if (s <= 0) {
-                return;
-            }
-            float period = s * 1.45f;
-            float shift = (android.os.SystemClock.uptimeMillis() % 1100L) / 1100f * period; // flames flow upward where the view redraws
-            tp.setShader(new LinearGradient(0, -shift, 0, period - shift, band, null, Shader.TileMode.REPEAT));
-            tp.setShadowLayer(s * 0.22f, 0, 0, glow); // warm halo, like heat glow
-        }
-    }
-
     public static class Suffix {
         public final CharSequence text;
         public final int width;
