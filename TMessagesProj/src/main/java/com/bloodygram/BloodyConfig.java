@@ -145,7 +145,7 @@ public class BloodyConfig {
     /** Falling snow on the chat background all year (Telegram shows it only on holidays). */
     public static boolean isChatSnow() {
         load();
-        return chatSnow;
+        return chatParticles == PARTICLES_SNOW;
     }
 
     /** Snow is on and particles are allowed by Lite Mode (the holiday snow needs the "high" preset only). */

@@ -559,7 +559,10 @@ public class SizeNotifierFrameLayout extends FrameLayout implements Theme.Colora
     }
 
     private void checkSnowflake(Canvas canvas) {
-        if (backgroundView != null && (Theme.canStartHolidayAnimation() && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND) || com.bloodygram.BloodyConfig.isChatSnowAllowed())) { // Bloodygram: isChatSnowAllowed
+        if (com.bloodygram.ui.BloodyFx.drawChatParticles(backgroundView, canvas)) { // Bloodygram: snow / embers / ash / sparks
+            return;
+        }
+        if (backgroundView != null && Theme.canStartHolidayAnimation() && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
             if (snowflakesEffect == null) {
                 snowflakesEffect = new SnowflakesEffect(1);
                 snowflakesEffect.setForcedColor(0xFFFFFFFF);

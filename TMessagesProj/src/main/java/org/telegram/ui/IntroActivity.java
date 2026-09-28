@@ -148,6 +148,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 LocaleController.getString(R.string.Page4Message),
                 LocaleController.getString(R.string.Page6Message)
         };
+        com.bloodygram.ui.BloodyIntro.patchTexts(titles, messages); // Bloodygram
         return true;
     }
 
@@ -158,6 +159,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         SpannableStringBuilder ssb = new SpannableStringBuilder(LocaleController.getString(R.string.Page1Title));
         ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         titles[0] = ssb;
+        titles[0] = com.bloodygram.ui.BloodyIntro.firstTitle(); // Bloodygram: no Telegram wordmark
 
 
         actionBar.setAddToContainer(false);
@@ -297,6 +299,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         viewPager.setPageMargin(0);
         viewPager.setOffscreenPageLimit(1);
         frameContainerView.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        com.bloodygram.ui.BloodyIntro.replaceLogo(frameLayout2, textureView, viewPager, ICON_WIDTH_DP, ICON_HEIGHT_DP); // Bloodygram
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {

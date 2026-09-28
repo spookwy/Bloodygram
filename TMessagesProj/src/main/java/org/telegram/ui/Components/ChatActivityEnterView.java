@@ -3516,6 +3516,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             if ((messageSendPreview != null && messageSendPreview.isShowing()) || (runningAnimationAudio != null && runningAnimationAudio.isRunning()) || moveToSendStateRunnable != null) {
                 return;
             }
+            com.bloodygram.ui.BloodyFx.onSend(view); // Bloodygram
             sendMessage();
         });
         sendButton.setOnLongClickListener(this::onSendLongClick);

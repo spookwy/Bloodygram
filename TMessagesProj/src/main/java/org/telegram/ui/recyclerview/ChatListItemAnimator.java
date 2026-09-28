@@ -70,7 +70,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         this.resourcesProvider = resourcesProvider;
         this.activity = activity;
         this.recyclerListView = listView;
-        translationInterpolator = DEFAULT_INTERPOLATOR;
+        translationInterpolator = com.bloodygram.ui.BloodyMotion.chatInterpolator(DEFAULT_INTERPOLATOR); // Bloodygram: spring
         alwaysCreateMoveAnimationIfPossible = true;
         setSupportsChangeAnimations(false);
     }

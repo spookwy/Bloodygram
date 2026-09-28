@@ -1870,7 +1870,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                         interpolated = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(animationProgress);
                     }
                 } else {
-                    interpolated = decelerateInterpolator.getInterpolation(animationProgress);
+                    interpolated = com.bloodygram.ui.BloodyMotion.transition(animationProgress, decelerateInterpolator.getInterpolation(animationProgress)); // Bloodygram: spring
                 }
                 if (open) {
                     float clampedInterpolated = MathUtils.clamp(interpolated, 0, 1);

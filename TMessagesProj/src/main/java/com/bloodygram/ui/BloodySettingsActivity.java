@@ -14,6 +14,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.BulletinFactory;
@@ -50,6 +51,12 @@ public class BloodySettingsActivity extends UniversalFragment {
     private static final int ID_CHANGE_PIN = 23;
     private static final int ID_STREAK_REMINDER = 24;
     private static final int ID_STREAK_CELEBRATION = 25;
+    private static final int ID_SEND_EFFECTS = 26;
+    private static final int ID_SPRING = 27;
+    private static final int ID_BLUR = 28;
+    private static final int ID_FONT = 29;
+
+    private static final int[] BUBBLE_RADII = {0, 4, 8, 12, 17};
 
     private static final int[] REMINDER_HOURS = {18, 19, 20, 21, 22, 23};
 
@@ -91,10 +98,36 @@ public class BloodySettingsActivity extends UniversalFragment {
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyAppearance)));
         items.add(UItem.asCheck(ID_SHOW_PEER_ID, BloodyStrings.get(R.string.BloodyShowPeerId)).setChecked(BloodyConfig.showPeerId));
         items.add(UItem.asCheck(ID_STREAK_NAME_COLOR, BloodyStrings.get(R.string.BloodyStreakNameColor)).setChecked(BloodyConfig.streakNameColor));
-        items.add(UItem.asCheck(ID_CHAT_SNOW, BloodyStrings.get(R.string.BloodyChatSnow)).setChecked(BloodyConfig.chatSnow));
         items.add(UItem.asCheck(ID_TYPING_ANIMATION, BloodyStrings.get(R.string.BloodyTypingAnimation)).setChecked(BloodyConfig.typingAnimation));
         items.add(UItem.asCheck(ID_ERASE_DUST, BloodyStrings.get(R.string.BloodyEraseDust)).setChecked(BloodyConfig.eraseDust));
+        items.add(UItem.asCheck(ID_SEND_EFFECTS, BloodyStrings.get(R.string.BloodySendEffects)).setChecked(BloodyConfig.sendEffects));
+        items.add(UItem.asCheck(ID_SPRING, BloodyStrings.get(R.string.BloodySpring)).setChecked(BloodyConfig.springAnimations));
+        if (BloodyMotion.canBlur()) {
+            items.add(UItem.asCheck(ID_BLUR, BloodyStrings.get(R.string.BloodyBlur)).setChecked(BloodyMotion.isBlurOn()));
+        }
+        items.add(UItem.asButton(ID_FONT, BloodyStrings.get(R.string.BloodyFont), BloodyFonts.names()[Math.max(0, Math.min(BloodyFonts.names().length - 1, BloodyConfig.messageFont))]));
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyAppearanceInfo)));
+
+        items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyChatEffect)));
+        String[] effects = {
+                BloodyStrings.get(R.string.BloodyEffectOff), BloodyStrings.get(R.string.BloodyEffectSnow), BloodyStrings.get(R.string.BloodyEffectEmbers),
+                BloodyStrings.get(R.string.BloodyEffectAsh), BloodyStrings.get(R.string.BloodyEffectSparks)
+        };
+        items.add(UItem.asSlideView(effects, Math.max(0, Math.min(effects.length - 1, BloodyConfig.chatParticles)), index -> BloodyConfig.putInt("chatParticles", BloodyConfig.chatParticles = index)));
+        items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyBubbleRadius)));
+        String[] radii = new String[BUBBLE_RADII.length];
+        int chosenRadius = 0;
+        for (int i = 0; i < radii.length; i++) {
+            radii[i] = String.valueOf(BUBBLE_RADII[i]);
+            if (Math.abs(BUBBLE_RADII[i] - SharedConfig.bubbleRadius) < Math.abs(BUBBLE_RADII[chosenRadius] - SharedConfig.bubbleRadius)) {
+                chosenRadius = i;
+            }
+        }
+        items.add(UItem.asSlideView(radii, chosenRadius, index -> {
+            SharedConfig.bubbleRadius = BUBBLE_RADII[index];
+            MessagesController.getGlobalMainSettings().edit().putInt("bubbleRadius", SharedConfig.bubbleRadius).apply();
+        }));
+        items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyChatEffectInfo)));
 
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyBackground)));
         items.add(UItem.asCheck(ID_KEEP_ALIVE, BloodyStrings.get(R.string.BloodyKeepAlive)).setChecked(BloodyConfig.keepAlive));
@@ -201,9 +234,24 @@ public class BloodySettingsActivity extends UniversalFragment {
             BloodyConfig.setStreakNameColor(!BloodyConfig.streakNameColor);
             listView.adapter.update(true);
             refreshDialogs();
-        } else if (item.id == ID_CHAT_SNOW) {
-            BloodyConfig.setChatSnow(!BloodyConfig.chatSnow);
+        } else if (item.id == ID_SEND_EFFECTS) {
+            BloodyConfig.putBoolean("sendEffects", BloodyConfig.sendEffects = !BloodyConfig.sendEffects);
             listView.adapter.update(true);
+        } else if (item.id == ID_SPRING) {
+            BloodyConfig.putBoolean("springAnimations", BloodyConfig.springAnimations = !BloodyConfig.springAnimations);
+            listView.adapter.update(true);
+        } else if (item.id == ID_BLUR) {
+            BloodyMotion.setBlur(!BloodyMotion.isBlurOn());
+            listView.adapter.update(true);
+        } else if (item.id == ID_FONT) {
+            org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity());
+            builder.setTitle(BloodyStrings.get(R.string.BloodyFont));
+            builder.setItems(BloodyFonts.names(), (dialog, which) -> {
+                BloodyConfig.putInt("messageFont", BloodyConfig.messageFont = which);
+                org.telegram.ui.ActionBar.Theme.createCommonMessageResources();
+                listView.adapter.update(true);
+            });
+            showDialog(builder.create());
         } else if (item.id == ID_TYPING_ANIMATION) {
             BloodyConfig.setTypingAnimation(!BloodyConfig.typingAnimation);
             listView.adapter.update(true);
