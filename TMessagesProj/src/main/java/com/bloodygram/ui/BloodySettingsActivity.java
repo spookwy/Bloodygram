@@ -55,6 +55,13 @@ public class BloodySettingsActivity extends UniversalFragment {
     private static final int ID_SPRING = 27;
     private static final int ID_BLUR = 28;
     private static final int ID_FONT = 29;
+    private static final int ID_ACCOUNT_THEME = 30;
+    private static final int ID_AI_KEY = 31;
+    private static final int ID_AI_MODEL = 32;
+    private static final int ID_TRANSCRIBE_LANG = 33;
+    private static final int ID_WRAPPED = 34;
+
+    private static final String[] TRANSCRIBE_LANGS = {"", "ru-RU", "uk-UA", "en-US"};
 
     private static final int[] BUBBLE_RADII = {0, 4, 8, 12, 17};
 
@@ -89,6 +96,15 @@ public class BloodySettingsActivity extends UniversalFragment {
         }
         items.add(UItem.asShadow(BloodyStrings.format(R.string.BloodySaveSecretInfo, BloodyStrings.formatNumber(BloodyConfig.prefs().getInt("secretSaved", 0)))));
 
+        items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyAiSection)));
+        items.add(UItem.asButton(ID_AI_KEY, BloodyStrings.get(R.string.BloodyAiKey), com.bloodygram.ai.BloodyAi.hasKey() ? "••••" + BloodyConfig.aiApiKey.substring(Math.max(0, BloodyConfig.aiApiKey.length() - 4)) : BloodyStrings.get(R.string.BloodyAiKeyNone)));
+        items.add(UItem.asButton(ID_AI_MODEL, BloodyStrings.get(R.string.BloodyAiModel), BloodyConfig.aiModel));
+        items.add(UItem.asButton(ID_TRANSCRIBE_LANG, BloodyStrings.get(R.string.BloodyTranscribeLang), transcribeLangName(BloodyConfig.prefs().getString("transcribeLang", ""))));
+        items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyAiInfo)));
+
+        items.add(UItem.asButton(ID_WRAPPED, R.drawable.msg_stats, BloodyStrings.get(R.string.BloodyWrapped)).accent());
+        items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyWrappedInfo)));
+
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodySettingsMessages)));
         items.add(UItem.asCheck(ID_SAVE_DELETED, BloodyStrings.get(R.string.BloodySaveDeleted)).setChecked(BloodyConfig.saveDeletedMessages));
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodySaveDeletedInfo)));
@@ -96,6 +112,7 @@ public class BloodySettingsActivity extends UniversalFragment {
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodySaveEditsInfo)));
 
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyAppearance)));
+        items.add(UItem.asButton(ID_ACCOUNT_THEME, BloodyStrings.get(R.string.BloodyAccountTheme), BloodyAccounts.themeLabel(currentAccount)));
         items.add(UItem.asCheck(ID_SHOW_PEER_ID, BloodyStrings.get(R.string.BloodyShowPeerId)).setChecked(BloodyConfig.showPeerId));
         items.add(UItem.asCheck(ID_STREAK_NAME_COLOR, BloodyStrings.get(R.string.BloodyStreakNameColor)).setChecked(BloodyConfig.streakNameColor));
         items.add(UItem.asCheck(ID_TYPING_ANIMATION, BloodyStrings.get(R.string.BloodyTypingAnimation)).setChecked(BloodyConfig.typingAnimation));
@@ -243,6 +260,49 @@ public class BloodySettingsActivity extends UniversalFragment {
         } else if (item.id == ID_BLUR) {
             BloodyMotion.setBlur(!BloodyMotion.isBlurOn());
             listView.adapter.update(true);
+        } else if (item.id == ID_AI_KEY) {
+            android.widget.EditText input = new android.widget.EditText(getParentActivity());
+            input.setHint("sk-ant-...");
+            input.setText(BloodyConfig.aiApiKey);
+            input.setSingleLine(true);
+            input.setTextColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogTextBlack));
+            android.widget.FrameLayout box = new android.widget.FrameLayout(getParentActivity());
+            box.setPadding(org.telegram.messenger.AndroidUtilities.dp(24), 0, org.telegram.messenger.AndroidUtilities.dp(24), 0);
+            box.addView(input);
+            new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
+                    .setTitle(BloodyStrings.get(R.string.BloodyAiKey))
+                    .setMessage(BloodyStrings.get(R.string.BloodyAiKeyHint))
+                    .setView(box)
+                    .setPositiveButton(BloodyStrings.get(R.string.BloodySave), (d, w) -> {
+                        BloodyConfig.putString("aiApiKey", BloodyConfig.aiApiKey = input.getText().toString().trim());
+                        listView.adapter.update(true);
+                    })
+                    .setNegativeButton(BloodyStrings.get(R.string.BloodyClose), null)
+                    .show();
+        } else if (item.id == ID_AI_MODEL) {
+            new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
+                    .setTitle(BloodyStrings.get(R.string.BloodyAiModel))
+                    .setItems(com.bloodygram.ai.BloodyAi.MODELS, (d, which) -> {
+                        BloodyConfig.putString("aiModel", BloodyConfig.aiModel = com.bloodygram.ai.BloodyAi.MODELS[which]);
+                        listView.adapter.update(true);
+                    })
+                    .show();
+        } else if (item.id == ID_TRANSCRIBE_LANG) {
+            String[] names = new String[TRANSCRIBE_LANGS.length];
+            for (int i = 0; i < names.length; i++) {
+                names[i] = transcribeLangName(TRANSCRIBE_LANGS[i]);
+            }
+            new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
+                    .setTitle(BloodyStrings.get(R.string.BloodyTranscribeLang))
+                    .setItems(names, (d, which) -> {
+                        BloodyConfig.putString("transcribeLang", TRANSCRIBE_LANGS[which]);
+                        listView.adapter.update(true);
+                    })
+                    .show();
+        } else if (item.id == ID_WRAPPED) {
+            com.bloodygram.stats.BloodyWrappedUi.show(this, currentAccount);
+        } else if (item.id == ID_ACCOUNT_THEME) {
+            BloodyAccounts.chooseTheme(getParentActivity(), currentAccount, () -> listView.adapter.update(true));
         } else if (item.id == ID_FONT) {
             org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity());
             builder.setTitle(BloodyStrings.get(R.string.BloodyFont));
@@ -294,6 +354,15 @@ public class BloodySettingsActivity extends UniversalFragment {
         } else if (item.id == ID_STREAK_RECALC) {
             BloodyStreaks.getInstance(currentAccount).recalcAll();
             BulletinFactory.of(this).createSimpleBulletin(R.raw.info, BloodyStrings.get(R.string.BloodyStreakRecalcDone)).show();
+        }
+    }
+
+    private static String transcribeLangName(String tag) {
+        switch (tag) {
+            case "ru-RU": return "Русский";
+            case "uk-UA": return "Українська";
+            case "en-US": return "English";
+            default: return BloodyStrings.get(R.string.BloodyTranscribeLangAuto);
         }
     }
 

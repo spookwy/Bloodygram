@@ -29,6 +29,13 @@ android {
 
     sourceSets.main.jniLibs.srcDirs = ['../TMessagesProj/jni/']
 
+    // Bloodygram: the Claude SDK dependencies bring duplicate license/metadata files
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE*', 'META-INF/NOTICE*', 'META-INF/INDEX.LIST']
+        }
+    }
+
     lintOptions {
         disable 'MissingTranslation'
         disable 'ExtraTranslation'

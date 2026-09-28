@@ -33788,8 +33788,10 @@ public class ChatActivity extends BaseFragment implements
                 chatActivityEnterView.addRecentGif(document);
                 break;
             }
-            case com.bloodygram.history.BloodyEditHistory.OPTION_EDIT_HISTORY: { // Bloodygram
-                com.bloodygram.history.BloodyEditHistory.getInstance(currentAccount).show(this, selectedObject);
+            case com.bloodygram.history.BloodyEditHistory.OPTION_EDIT_HISTORY: // Bloodygram
+            case com.bloodygram.chat.BloodyMessageMenu.OPTION_TRANSCRIBE:
+            case com.bloodygram.chat.BloodyMessageMenu.OPTION_AI_EXPLAIN: {
+                com.bloodygram.chat.BloodyMessageMenu.onOption(this, option, selectedObject);
                 break;
             }
             case OPTION_SUGGESTION_EDIT_MESSAGE:
@@ -45838,7 +45840,7 @@ public class ChatActivity extends BaseFragment implements
                     options.add(OPTION_TRANSLATE);
                     icons.add(R.drawable.msg_translate);
                 }
-                com.bloodygram.history.BloodyEditHistory.addMenuItem(currentAccount, selectedObject, items, options, icons); // Bloodygram
+                com.bloodygram.chat.BloodyMessageMenu.addItems(currentAccount, selectedObject, items, options, icons); // Bloodygram
                 if (message.canEditMessage(currentChat) && message.type != MessageObject.TYPE_POLL || chatMode == MODE_WELCOME_MESSAGES) {
                     items.add(LocaleController.getString(R.string.Edit));
                     options.add(OPTION_EDIT);
@@ -46186,7 +46188,7 @@ public class ChatActivity extends BaseFragment implements
                     options.add(OPTION_TRANSLATE);
                     icons.add(R.drawable.msg_translate);
                 }
-                com.bloodygram.history.BloodyEditHistory.addMenuItem(currentAccount, selectedObject, items, options, icons); // Bloodygram
+                com.bloodygram.chat.BloodyMessageMenu.addItems(currentAccount, selectedObject, items, options, icons); // Bloodygram
                 if (allowEdit || chatMode == MODE_WELCOME_MESSAGES) {
                     items.add(LocaleController.getString(R.string.Edit));
                     options.add(OPTION_EDIT);

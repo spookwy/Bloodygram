@@ -31,7 +31,8 @@
 - Сборка debug для установки на телефон: `./gradlew :TMessagesProj_App:assembleAfatDebug`
   APK: `TMessagesProj_App/build/outputs/apk/afat/debug/app.apk`, пакет `com.bloodygram.messenger.beta`.
 - `applicationId` = `com.bloodygram.messenger` (`APP_PACKAGE` в `gradle.properties`, заглушки `google-services.json`, run.ps1) — сменили 28.09.2026 с `com.epicgram.messenger`. После смены в эмуляторе нужен новый вход; старое приложение `com.epicgram.messenger.beta` ещё установлено рядом.
-- Быстрая проверка компиляции (только arm64): добавить `-Pandroid.injected.build.abi=arm64-v8a`. **Такой APK помечен `testOnly=true`** и ставится только через `adb install -t`, файлом на телефон — «пакет недействителен». Лежит в `build/intermediates/apk/...`.
+- ⚠️ Флаг `-Pandroid.injected.build.abi=...` СЕЙЧАС СЛОМАН в этом окружении: ломает плагин google-services 4.3.15 (`Failed to apply plugin ... No such property: libraryVariants for class: java.lang.String`). Падает и на чистом коммите — это проблема окружения (Gradle 8.13/AGP), не наших правок. Пока собираем полный afat без флага (`.\gradlew.bat :TMessagesProj_App:assembleAfatDebug`), ~1 мин с кэшем native; готовый APK `TMessagesProj_App\build\outputs\apk\afat\debug\app.apk` (не testOnly) ставится `adb install -r`.
+- (когда флаг работал) Быстрая проверка компиляции (только arm64): `-Pandroid.injected.build.abi=arm64-v8a`. **Такой APK помечен `testOnly=true`** и ставится только через `adb install -t`, файлом на телефон — «пакет недействителен». Лежит в `build/intermediates/apk/...`.
 - Подпись debug сейчас — dummy `release.keystore` из апстрима (публичный ключ, Play Protect ругается). Перед раздачей людям — свой keystore, иначе потом придётся переустанавливать с потерей данных.
 - Модули: `TMessagesProj` — весь код клиента (library); `TMessagesProj_App` — обёртка-приложение, которую собираем. Остальные `TMessagesProj_App*` (Huawei, HockeyApp, Standalone, Tests) не трогаем.
 
@@ -47,7 +48,7 @@
 - Данные — свои SQLite-базы на аккаунт, в базу Telegram не пишем. Синглтоны по аккаунту пересоздаются при смене userId.
 - **Переводы строк:** в репо `core.autocrlf=false` + `.gitattributes` (`* -text`), всё хранится в LF. Раньше рабочая копия была в CRLF (глобальный autocrlf=true) — 28.09.2026 нормализовали. Если после правки `git diff` показывает весь файл — проверь `git ls-files --eol` (`i/lf w/crlf`) и сними `\r`. `grep -c $'\r'` в Git Bash тут врёт — смотреть `od -c`. Ассеты не конвертировать.
 - **Ассет темы** Telegram копирует в `files/` и обновляет копию только при смене **размера** файла — правка цвета той же длины не доходила до приложения. Хук `BloodyTheme.isStaleCopy` в `Theme.getAssetFile` перекопирует нашу тему после каждого обновления APK.
-- Эмулятор для проверок: AVD `epic` (Android 35, x86_64, WHPX). Быстрая сборка под него: `-Pandroid.injected.build.abi=x86_64` + `adb install -t`. Не экспортировать `MSYS_NO_PATHCONV` при запуске `gradlew` — ломает wrapper. Эмулятор относится к среднему классу производительности: Lite Mode выключает `FLAG_CHAT_BACKGROUND`.
+- Эмулятор для проверок: AVD `epic` (Android 35, x86_64, WHPX). Сборка под него: полный afat без abi-флага (флаг сейчас ломает google-services, см. раздел «Сборка») → `adb install -r ...\outputs\apk\afat\debug\app.apk`. Не экспортировать `MSYS_NO_PATHCONV` при запуске `gradlew` — ломает wrapper. Эмулятор относится к среднему классу производительности: Lite Mode выключает `FLAG_CHAT_BACKGROUND`.
 - Python в системе нет (только заглушка Store) — для скриптов использовать bash/node.
 - Git: локальная идентичность репо `xdlolpicd2 <xdlolpicd2@gmail.com>` (глобальной нет).
 

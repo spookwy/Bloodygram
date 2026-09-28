@@ -23,6 +23,10 @@ public class BloodyChatMenu {
         if (menu == null) {
             return;
         }
+        if (com.bloodygram.ai.BloodyAi.hasKey()) {
+            menu.lazilyAddSubItem(com.bloodygram.ai.BloodyAiChat.MENU_SUMMARY, R.drawable.msg_emoji_objects, BloodyStrings.get(R.string.BloodyAiSummary));
+            menu.lazilyAddSubItem(com.bloodygram.ai.BloodyAiChat.MENU_REPLIES, R.drawable.msg_emoji_objects, BloodyStrings.get(R.string.BloodyAiReplies));
+        }
         lastMenu = new java.lang.ref.WeakReference<>(menu);
         hideItem = menu.lazilyAddSubItem(BloodyVault.MENU_HIDE, R.drawable.msg_archive_hide, hideText(account, dialogId));
         lockItem = menu.lazilyAddSubItem(BloodyVault.MENU_LOCK, R.drawable.msg_secret, lockText(account, dialogId));
@@ -64,6 +68,14 @@ public class BloodyChatMenu {
     public static boolean onItemClick(ChatActivity fragment, int id, int account, long dialogId) {
         if (id == BloodyStreakUi.MENU_ID) {
             BloodyStreakUi.showStats(fragment, account, dialogId);
+            return true;
+        }
+        if (id == com.bloodygram.ai.BloodyAiChat.MENU_SUMMARY) {
+            com.bloodygram.ai.BloodyAiChat.summarize(fragment);
+            return true;
+        }
+        if (id == com.bloodygram.ai.BloodyAiChat.MENU_REPLIES) {
+            com.bloodygram.ai.BloodyAiChat.suggestReplies(fragment);
             return true;
         }
         if (id == BloodyVault.MENU_HIDE) {

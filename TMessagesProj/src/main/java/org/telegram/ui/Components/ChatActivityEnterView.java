@@ -5140,6 +5140,18 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             });
         }
+        com.bloodygram.chat.BloodyAutoDelete.addSendOption(options, currentAccount, dialog_id, () -> { // Bloodygram: send, delete for everyone later
+            sentFromPreview = System.currentTimeMillis();
+            final boolean shownDialog = sendMessageInternal(true, 0, 0, 0, true);
+            if (!containsSendMessage && messageSendPreview != null) {
+                messageSendPreview.dismiss(!shownDialog);
+                messageSendPreview = null;
+            } else {
+                dismissSendPreviewSent = !shownDialog;
+                AndroidUtilities.cancelRunOnUIThread(dismissSendPreview);
+                AndroidUtilities.runOnUIThread(dismissSendPreview, 500);
+            }
+        });
         options.setupSelectors();
         if (sendWhenOnlineButton != null) {
             TLRPC.User user = parentFragment == null ? null : parentFragment.getCurrentUser();

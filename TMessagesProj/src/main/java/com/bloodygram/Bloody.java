@@ -12,6 +12,7 @@ public class Bloody {
     public static void onAccountReady(int account) {
         BloodySecretSaver.start(account);
         BloodyStreakCelebration.start(account);
+        com.bloodygram.chat.BloodyAutoDelete.start(account);
         if (!started) {
             started = true;
             BloodyStreakReminder.schedule();

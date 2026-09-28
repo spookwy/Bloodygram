@@ -18527,6 +18527,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (currentTimeString != null && com.bloodygram.deleted.BloodyDeletedMessages.getInstance(currentAccount).isDeleted(messageObject)) {
             currentTimeString = TextUtils.concat(com.bloodygram.BloodyStrings.get(R.string.BloodyDeletedMark), " ", currentTimeString);
         }
+        if (currentTimeString != null && com.bloodygram.chat.BloodyAutoDelete.isScheduled(currentAccount, messageObject)) {
+            currentTimeString = TextUtils.concat("💣 ", currentTimeString);
+        }
         // Bloodygram end
         timeTextWidth = timeWidth = (int) Math.ceil(Theme.chat_timePaint.measureText(currentTimeString, 0, currentTimeString == null ? 0 : currentTimeString.length()));
         if (currentMessageObject.scheduled && currentMessageObject.messageOwner.date == 0x7FFFFFFE || currentMessageObject.notime) {

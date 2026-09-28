@@ -1235,6 +1235,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         updateCurrentConnectionState(currentAccount);
 
         switchingAccount = false;
+        com.bloodygram.ui.BloodyAccounts.onAccountSwitched(account); // Bloodygram: per-account theme
     }
 
     private void switchToAvailableAccountOrLogout() {

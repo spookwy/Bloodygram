@@ -87,7 +87,7 @@ public class BloodyConfig {
             springAnimations = prefs.getBoolean("springAnimations", true);
             messageFont = prefs.getInt("messageFont", 0);
             aiApiKey = prefs.getString("aiApiKey", "");
-            aiModel = prefs.getString("aiModel", "claude-sonnet-5");
+            aiModel = prefs.getString("aiModel", com.bloodygram.ai.BloodyAi.DEFAULT_MODEL);
             deletedSince = prefs.getInt("deletedSince", 0);
             if (deletedSince == 0) {
                 deletedSince = (int) (System.currentTimeMillis() / 1000);

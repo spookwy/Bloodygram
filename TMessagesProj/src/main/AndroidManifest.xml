@@ -480,6 +480,7 @@
             android:foregroundServiceType="remoteMessaging"
         />
         <receiver android:name="com.bloodygram.streaks.BloodyStreakReminder" android:exported="false" />
+        <receiver android:name="com.bloodygram.chat.BloodyAutoDelete$Receiver" android:exported="false" />
         <service
             android:name=".NotificationsService"
             android:enabled="true"

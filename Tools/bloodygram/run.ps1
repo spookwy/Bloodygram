@@ -27,7 +27,9 @@ if ($Legacy) {
     $package = "com.epicgram.messenger"
     $extra = @("-PAPP_PACKAGE=$package")
 }
-& .\gradlew.bat :TMessagesProj_App:assembleAfatDebug "-Pandroid.injected.build.abi=x86_64" @extra --console=plain
+# NB: -Pandroid.injected.build.abi breaks google-services 4.3.15 ("No such property: libraryVariants"),
+# so we build the full afat APK (still contains x86_64, runs on the emulator). ~1 min with native cached.
+& .\gradlew.bat :TMessagesProj_App:assembleAfatDebug @extra --console=plain
 if ($LASTEXITCODE -ne 0) { throw "Build failed" }
 
 $devices = & $adb devices | Select-String "emulator-"
@@ -41,6 +43,6 @@ if (-not $devices) {
     } while ($booted -ne "1")
 }
 
-& $adb install -r -t "TMessagesProj_App\build\intermediates\apk\afat\debug\app.apk"
+& $adb install -r -t "TMessagesProj_App\build\outputs\apk\afat\debug\app.apk"
 & $adb shell monkey -p "$package.beta" -c android.intent.category.LAUNCHER 1 | Out-Null
 Write-Host "Bloodygram is running in the emulator"
