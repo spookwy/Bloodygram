@@ -365,6 +365,9 @@ public class ApplicationLoader extends Application {
     });
 
     public static void startPushService() {
+        if (com.epicgram.keepalive.EpicKeepAliveService.onStartPushService()) { // Epicgram
+            return;
+        }
         SharedPreferences preferences = MessagesController.getGlobalNotificationsSettings();
         boolean enabled;
         if (preferences.contains("pushService")) {

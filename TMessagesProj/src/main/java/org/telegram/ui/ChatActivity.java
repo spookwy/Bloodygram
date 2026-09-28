@@ -2923,6 +2923,7 @@ public class ChatActivity extends BaseFragment implements
             .add(NotificationCenter.didLoadSendAsPeers)
             .add(NotificationCenter.closeChatActivity)
             .add(NotificationCenter.messagesDeleted)
+            .add(NotificationCenter.epicMessagesMarkedDeleted) // Epicgram
             .add(NotificationCenter.historyCleared)
             .add(NotificationCenter.messageReceivedByServer)
             .add(NotificationCenter.messageReceivedByAck)
@@ -3688,6 +3689,10 @@ public class ChatActivity extends BaseFragment implements
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(final int id) {
+                if (id == com.epicgram.streaks.EpicStreakUi.MENU_ID) { // Epicgram
+                    com.epicgram.streaks.EpicStreakUi.showStats(ChatActivity.this, currentAccount, dialog_id);
+                    return;
+                }
                 if (id == -1) {
                     if (isInPollAddOptionMode()) {
                         pollAddOptionModeClose();
@@ -4405,6 +4410,9 @@ public class ChatActivity extends BaseFragment implements
                 } else {
                     headerItem.hideSubItem(call);
                     headerItem.hideSubItem(video_call);
+                }
+                if (chatMode == 0) {
+                    com.epicgram.streaks.EpicStreakUi.addMenuItem(headerItem, currentAccount, dialog_id, true); // Epicgram
                 }
             }
 
@@ -22264,6 +22272,9 @@ public class ChatActivity extends BaseFragment implements
             if (updated && chatAdapter != null) {
                 chatAdapter.notifyDataSetChanged(false);
             }
+        } else if (id == NotificationCenter.epicMessagesMarkedDeleted) { // Epicgram
+            final com.epicgram.deleted.EpicDeletedMessages epicDeleted = com.epicgram.deleted.EpicDeletedMessages.getInstance(currentAccount);
+            updateVisibleRows(messageObject -> messageObject != null && epicDeleted.isDeleted(messageObject));
         } else if (id == NotificationCenter.messagesDeleted) {
             boolean scheduled = (Boolean) args[2];
             if (scheduled != (chatMode == MODE_SCHEDULED)) {
@@ -33775,6 +33786,10 @@ public class ChatActivity extends BaseFragment implements
                     BulletinFactory.of(this).createDownloadBulletin(BulletinFactory.FileType.GIF, themeDelegate).show();
                 }
                 chatActivityEnterView.addRecentGif(document);
+                break;
+            }
+            case com.epicgram.history.EpicEditHistory.OPTION_EDIT_HISTORY: { // Epicgram
+                com.epicgram.history.EpicEditHistory.getInstance(currentAccount).show(this, selectedObject);
                 break;
             }
             case OPTION_SUGGESTION_EDIT_MESSAGE:
@@ -45823,6 +45838,7 @@ public class ChatActivity extends BaseFragment implements
                     options.add(OPTION_TRANSLATE);
                     icons.add(R.drawable.msg_translate);
                 }
+                com.epicgram.history.EpicEditHistory.addMenuItem(currentAccount, selectedObject, items, options, icons); // Epicgram
                 if (message.canEditMessage(currentChat) && message.type != MessageObject.TYPE_POLL || chatMode == MODE_WELCOME_MESSAGES) {
                     items.add(LocaleController.getString(R.string.Edit));
                     options.add(OPTION_EDIT);
@@ -46170,6 +46186,7 @@ public class ChatActivity extends BaseFragment implements
                     options.add(OPTION_TRANSLATE);
                     icons.add(R.drawable.msg_translate);
                 }
+                com.epicgram.history.EpicEditHistory.addMenuItem(currentAccount, selectedObject, items, options, icons); // Epicgram
                 if (allowEdit || chatMode == MODE_WELCOME_MESSAGES) {
                     items.add(LocaleController.getString(R.string.Edit));
                     options.add(OPTION_EDIT);

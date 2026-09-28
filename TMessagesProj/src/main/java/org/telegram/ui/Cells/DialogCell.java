@@ -2385,6 +2385,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             if (nameString instanceof String) {
                 nameString = ((String) nameString).replace('\n', ' ');
             }
+            // Epicgram start: streak fire after the name, the name is ellipsized first
+            com.epicgram.streaks.EpicFire.Suffix epicFire = user != null && customDialog == null && !twoLinesForName ? com.epicgram.streaks.EpicStreakUi.listSuffix(currentAccount, currentDialogId, Theme.dialogs_namePaint[paintIndex]) : null;
+            if (epicFire != null) {
+                ellipsizeWidth = Math.max(0, ellipsizeWidth - epicFire.width);
+            }
+            // Epicgram end
             CharSequence nameStringFinal = nameString;
             if (nameLayoutEllipsizeByGradient) {
                 nameLayoutFits = nameStringFinal.length() == TextUtils.ellipsize(nameStringFinal, Theme.dialogs_namePaint[paintIndex], ellipsizeWidth, TextUtils.TruncateAt.END).length();
@@ -2398,6 +2404,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 nameStringFinal = TextUtils.ellipsize(nameStringFinal, Theme.dialogs_namePaint[paintIndex], ellipsizeWidth, TextUtils.TruncateAt.END);
             }
             nameStringFinal = Emoji.replaceEmoji(nameStringFinal, Theme.dialogs_namePaint[paintIndex].getFontMetricsInt(), false);
+            if (epicFire != null) { // Epicgram
+                nameStringFinal = TextUtils.concat(nameStringFinal, epicFire.text);
+                ellipsizeWidth += epicFire.width;
+            }
             if (message != null && message.hasHighlightedWords()) {
                 CharSequence s = AndroidUtilities.highlightText(nameStringFinal, message.highlightedWords, resourcesProvider);
                 if (s != null) {

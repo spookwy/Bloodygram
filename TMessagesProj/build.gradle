@@ -147,6 +147,16 @@ android {
 
         multiDexEnabled true
 
+        // Epicgram start: own api_id / api_hash from local.properties (never commit real keys)
+        def epicAppId = getProps("EPIC_APP_ID")
+        def epicAppHash = getProps("EPIC_APP_HASH")
+        if (!epicAppId || !epicAppHash) {
+            logger.warn("Epicgram: EPIC_APP_ID / EPIC_APP_HASH are not set in local.properties, login will not work")
+        }
+        buildConfigField "int", "EPIC_APP_ID", epicAppId ?: "0"
+        buildConfigField "String", "EPIC_APP_HASH", "\"" + (epicAppHash ?: "") + "\""
+        // Epicgram end
+
         externalNativeBuild {
             cmake {
                 version '3.22.1'

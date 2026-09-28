@@ -653,6 +653,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int infoEndRowEmpty;
     private int phoneRow;
     private int noteRow;
+    private int epicStreakRow = -1; // Epicgram
     private int locationRow;
     private int userInfoRow;
     private int channelInfoRow;
@@ -2541,6 +2542,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             @Override
             public void onItemClick(final int id) {
                 if (getParentActivity() == null) {
+                    return;
+                }
+                if (id == com.epicgram.streaks.EpicStreakUi.MENU_ID) { // Epicgram
+                    com.epicgram.streaks.EpicStreakUi.showStats(ProfileActivity.this, currentAccount, userId);
                     return;
                 }
                 if (id == -1) {
@@ -4639,6 +4644,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 Bundle args = new Bundle();
                 args.putLong("chat_id", userInfo.personal_channel_id);
                 presentFragment(new ChatActivity(args));
+            } else if (position == epicStreakRow) { // Epicgram
+                com.epicgram.streaks.EpicStreakUi.showStats(ProfileActivity.this, currentAccount, userId);
             } else if (position == birthdayRow) {
                 if (birthdayEffect != null && birthdayEffect.start()) {
                     return;
@@ -10451,6 +10458,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         rowCount = 0;
 
         setAvatarRow = -1;
+        epicStreakRow = -1; // Epicgram
         setAvatarSectionRow = -1;
         numberSectionRow = -1;
         numberRow = -1;
@@ -10726,6 +10734,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (userInfo.note != null) {
                         noteRow = rowCount++;
                     }
+                }
+                if (com.epicgram.streaks.EpicStreakUi.hasProfileRow(currentAccount, userId)) { // Epicgram
+                    epicStreakRow = rowCount++;
                 }
                 if (actionsView == null && userId != getUserConfig().getClientUserId()) {
                     notificationsRow = rowCount++;
@@ -11422,7 +11433,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         (getContactsController().contactsDict.size() != 0 || !getContactsController().isLoadingContacts())) {
                     nameTextView[a].setText(PhoneFormat.getInstance().format("+" + user.phone));
                 } else {
-                    nameTextView[a].setText(newString);
+                    nameTextView[a].setText(com.epicgram.streaks.EpicStreakUi.profileName(currentAccount, newString, userId, nameTextView[a].getPaint())); // Epicgram
                 }
                 if (a == 0 && onlineTextOverride != null) {
                     onlineTextView[a].setText(onlineTextOverride);
@@ -12127,6 +12138,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     callItemVisible = true;
                     videoCallItemVisible = userInfo.video_calls_available;
                 }
+                com.epicgram.streaks.EpicStreakUi.addMenuItem(otherItem, currentAccount, userId, false); // Epicgram
                 if (isBot || getContactsController().contactsDict.get(userId) == null) {
                     if (MessagesController.isSupportUser(user)) {
                         if (userBlocked) {
@@ -13456,6 +13468,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     TextDetailCell detailCell = (TextDetailCell) holder.itemView;
                     boolean containsQr = false;
                     boolean containsGift = false;
+                    if (position == epicStreakRow) { // Epicgram
+                        com.epicgram.streaks.EpicStreakUi.bindProfileRow(detailCell, currentAccount, userId, position != infoEndRow);
+                        break;
+                    }
                     if (position == birthdayRow) {
                         TLRPC.UserFull userFull = getMessagesController().getUserFull(userId);
                         if (userFull != null && userFull.birthday != null) {
@@ -14314,7 +14330,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (position == infoHeaderRow || position == membersHeaderRow || position == settingsSectionRow2 ||
                     position == numberSectionRow || position == helpHeaderRow || position == debugHeaderRow || position == botPermissionsHeader) {
                 return VIEW_TYPE_HEADER;
-            } else if (position == phoneRow || position == locationRow || position == numberRow || position == birthdayRow) {
+            } else if (position == phoneRow || position == locationRow || position == numberRow || position == birthdayRow || position == epicStreakRow) { // Epicgram: epicStreakRow
                 return VIEW_TYPE_TEXT_DETAIL;
             } else if (position == usernameRow || position == setUsernameRow) {
                 return VIEW_TYPE_TEXT_DETAIL_MULTILINE;
