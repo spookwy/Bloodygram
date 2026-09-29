@@ -140,7 +140,7 @@ public class BloodyAiChat {
     }
 
     /** Latest messages with text (or a voice transcript), oldest first. */
-    private static String transcript(ChatActivity fragment, int limit) {
+    static String transcript(ChatActivity fragment, int limit) {
         ArrayList<MessageObject> messages = fragment.messages;
         MessagesController controller = fragment.getMessagesController();
         SimpleDateFormat time = new SimpleDateFormat("dd.MM HH:mm", Locale.US);

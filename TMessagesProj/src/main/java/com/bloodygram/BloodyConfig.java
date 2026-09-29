@@ -36,6 +36,8 @@ public class BloodyConfig {
     public static boolean streakCelebration;
     /** One missed day a week doesn't break a streak. Off by default: counts then differ from the "Огонёк" plugin. */
     public static boolean streakFreeze;
+    /** "✨ Suggest a reply" chip above the input after incoming messages (needs an AI key). */
+    public static boolean smartReplies;
     public static boolean sendEffects;
     /** Chat background particles: {@link #PARTICLES_OFF}, snow, embers, ash, sparks. */
     public static int chatParticles;
@@ -96,6 +98,7 @@ public class BloodyConfig {
             streakReminderHour = prefs.getInt("streakReminderHour", 21);
             streakCelebration = prefs.getBoolean("streakCelebration", true);
             streakFreeze = prefs.getBoolean("streakFreeze", false);
+            smartReplies = prefs.getBoolean("smartReplies", true);
             sendEffects = prefs.getBoolean("sendEffects", true);
             // "chatParticles" used to be OFF=0,SNOW=1,EMBERS=2,ASH=3,SPARKS=4; EMBERS was dropped and ASH/SPARKS
             // shifted down a slot. Read under the old key once and remap, so upgrading users keep their choice.

@@ -68,6 +68,7 @@ public class BloodySettingsActivity extends UniversalFragment {
     private static final int ID_UPDATE = 39;
     private static final int ID_STREAK_FREEZE = 40;
     private static final int ID_STREAK_TOP = 41;
+    private static final int ID_SMART_REPLIES = 42;
 
     private static final String[] TRANSCRIBE_LANGS = {"", "ru-RU", "uk-UA", "en-US"};
 
@@ -111,6 +112,7 @@ public class BloodySettingsActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_AI_PROVIDER, BloodyStrings.get(R.string.BloodyAiProvider), aiProvider.name));
         items.add(UItem.asButton(ID_AI_KEY, BloodyStrings.get(R.string.BloodyAiKey), aiKey.isEmpty() ? BloodyStrings.get(R.string.BloodyAiKeyNone) : "••••" + aiKey.substring(Math.max(0, aiKey.length() - 4))));
         items.add(UItem.asButton(ID_AI_MODEL, BloodyStrings.get(R.string.BloodyAiModel), aiProvider.model()));
+        items.add(UItem.asCheck(ID_SMART_REPLIES, BloodyStrings.get(R.string.BloodySmartReplies)).setChecked(BloodyConfig.smartReplies));
         items.add(UItem.asButton(ID_TRANSCRIBE_LANG, BloodyStrings.get(R.string.BloodyTranscribeLang), transcribeLangName(BloodyConfig.prefs().getString("transcribeLang", ""))));
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyAiInfo)));
 
@@ -389,6 +391,9 @@ public class BloodySettingsActivity extends UniversalFragment {
             listView.adapter.update(true);
         } else if (item.id == ID_STREAK_CELEBRATION) {
             BloodyConfig.putBoolean("streakCelebration", BloodyConfig.streakCelebration = !BloodyConfig.streakCelebration);
+            listView.adapter.update(true);
+        } else if (item.id == ID_SMART_REPLIES) {
+            BloodyConfig.putBoolean("smartReplies", BloodyConfig.smartReplies = !BloodyConfig.smartReplies);
             listView.adapter.update(true);
         } else if (item.id == ID_STREAK_TOP) {
             presentFragment(new com.bloodygram.streaks.BloodyStreakTopActivity());

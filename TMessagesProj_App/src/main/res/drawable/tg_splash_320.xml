@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bloodygram: system splash icon (Android 12+), overrides Telegram's paper plane from the library.
+     The splash shows a 240dp square clipped to a 160dp circle, so the logo is inset to fit inside it. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/bloody_logo"
+    android:inset="48dp" />

@@ -103,6 +103,8 @@
     <string name="BloodyAiDigestNothing_ru">В каналах нет непрочитанного</string>
     <string name="BloodyAiTranslate_ru">✨ Перевести</string>
     <string name="BloodyAiTranslateChat_ru">✨ Перевести чат</string>
+    <string name="BloodySmartReplies_ru">Подсказки ответа над клавиатурой</string>
+    <string name="BloodySmartSuggest_ru">✨ Предложить ответ</string>
     <string name="BloodyStatsReplyMe_ru">Ты отвечаешь за</string>
     <string name="BloodyStatsReplyThem_ru">%1$s отвечает за</string>
     <string name="BloodyStatsActiveHour_ru">Самое активное время</string>

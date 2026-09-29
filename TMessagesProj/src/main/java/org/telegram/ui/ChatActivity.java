@@ -492,6 +492,7 @@ public class ChatActivity extends BaseFragment implements
     private AnimatedTextView selectedMessagesCountTextView;
     private RecyclerListView.OnItemClickListener mentionsOnItemClickListener;
     private SuggestEmojiView suggestEmojiPanel;
+    private com.bloodygram.ai.BloodySmartReplies bloodySmartReplies; // Bloodygram: AI reply chips above the input
     private ActionBarMenuItem.Item muteItem;
     private ActionBarMenuItem.Item muteItemGap;
     private ActionBarMenuItem.Item feeItemGap;
@@ -8266,6 +8267,9 @@ public class ChatActivity extends BaseFragment implements
             LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 160, Gravity.LEFT | Gravity.BOTTOM, 7, 0, 7, 0)
         );
         suggestEmojiPanel.setVisibility(allowStickersPanel && !isInPreviewMode() && (chatActivityEnterView == null || !chatActivityEnterView.isStickersExpanded()) ? View.VISIBLE : View.GONE);
+        if (chatMode == 0 && !isInPreviewMode()) { // Bloodygram
+            contentView.addView(bloodySmartReplies = com.bloodygram.ai.BloodySmartReplies.create(context, this), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.LEFT | Gravity.BOTTOM, 7, 0, 7, 0));
+        }
 
         final ChatActivityEnterTopView.EditView editView = new ChatActivityEnterTopView.EditView(context);
         editView.setMotionEventSplittingEnabled(false);
@@ -10918,6 +10922,9 @@ public class ChatActivity extends BaseFragment implements
                 - getTopicTabsSideSize(TopicsTabsView.Position.BOTTOM)
                 - dp(ChatInputViewsContainer.INPUT_BUBBLE_BOTTOM + 4);
             sideControlsButtonsLayout.setTranslationY(baseTranslationY2);
+            if (bloodySmartReplies != null) { // Bloodygram: right above the input bubble
+                bloodySmartReplies.setTranslationY(baseTranslationY2);
+            }
         }
 
         if (suggestEmojiPanel != null) {
