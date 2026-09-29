@@ -19,7 +19,7 @@ public enum IconBackgroundColors {
     public final int bottom;
 
     private IconBackgroundColors(int top, int bottom) {
-        this.top = top;
-        this.bottom = bottom;
+        this.top = com.bloodygram.BloodyTheme.iconColor(top, true); // Bloodygram: blood palette
+        this.bottom = com.bloodygram.BloodyTheme.iconColor(bottom, false);
     }
 }

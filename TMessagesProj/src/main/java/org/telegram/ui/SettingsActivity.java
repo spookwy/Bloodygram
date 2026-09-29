@@ -686,7 +686,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
 
         // Bloodygram start
-        items.add(SettingCell.Factory.of(1000, 0xFFFF9F43, 0xFFFF4F6E, R.drawable.settings_chat, com.bloodygram.BloodyStrings.get(R.string.BloodySettings), com.bloodygram.BloodyStrings.get(R.string.BloodySettingsInfo)));
+        items.add(SettingCell.Factory.of(1000, 0xFFE0243C, 0xFF6E0F26, R.drawable.settings_chat, com.bloodygram.BloodyStrings.get(R.string.BloodySettings), com.bloodygram.BloodyStrings.get(R.string.BloodySettingsInfo)));
         items.add(UItem.asShadow(null));
         // Bloodygram end
 
@@ -1217,7 +1217,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             titleView.setTranslationX(icon == 0 ? dp(2) : 0);
             subtitleView.setTranslationX(icon == 0 ? dp(2) : 0);
 
-            iconBackground.setColor(iconColorTop, iconColorBottom);
+            iconBackground.setColor(com.bloodygram.BloodyTheme.iconColor(iconColorTop, true), com.bloodygram.BloodyTheme.iconColor(iconColorBottom, false)); // Bloodygram
             iconView.setImageResource(icon);
             titleView.setText(title);
             subtitleView.setVisibility((twoLines = !TextUtils.isEmpty(subtitle)) ? View.VISIBLE : View.GONE);

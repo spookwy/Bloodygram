@@ -15,6 +15,44 @@ public class BloodyTheme {
      * Telegram re-copies a theme asset to files/ only when its size changes, so an edited color
      * of the same length would never reach the app. Our theme is re-copied after every APK update.
      */
+    // blood palette for Telegram's colored icon squares (settings, profile, menus): {top, bottom} per hue family
+    private static final int[][] ICON_PALETTE = {
+            {0xFFFF3B3B, 0xFFD41E1E}, // red      -> scarlet
+            {0xFFFF5A2A, 0xFFD83A12}, // orange   -> ember
+            {0xFFB00020, 0xFF7A0015}, // green    -> dark blood
+            {0xFF9E1B3A, 0xFF6E0F26}, // cyan     -> wine
+            {0xFFE0243C, 0xFFB3182D}, // blue     -> crimson
+            {0xFFF0506E, 0xFFC7304F}, // purple   -> rose
+    };
+
+    /**
+     * Maps one of Telegram's icon background colors to the blood palette, keeping different source hues different.
+     * Grays become a dark red-gray. Identity when the setting is off.
+     */
+    public static int iconColor(int color, boolean top) {
+        BloodyConfig.load();
+        if (!BloodyConfig.bloodyIcons) {
+            return color;
+        }
+        // already mapped (enum colors pass through SettingCell again): keep, or every shade would collapse to scarlet
+        for (int[] pair : ICON_PALETTE) {
+            if (pair[0] == color || pair[1] == color) {
+                return color;
+            }
+        }
+        if (color == 0xFF6A3A42 || color == 0xFF4A2229) {
+            return color;
+        }
+        float[] hsv = new float[3];
+        android.graphics.Color.colorToHSV(color, hsv);
+        if (hsv[1] < 0.25f) {
+            return top ? 0xFF6A3A42 : 0xFF4A2229;
+        }
+        float h = hsv[0];
+        int family = h < 20 || h >= 330 ? 0 : h < 60 ? 1 : h < 160 ? 2 : h < 195 ? 3 : h < 250 ? 4 : 5;
+        return ICON_PALETTE[family][top ? 0 : 1];
+    }
+
     public static boolean isStaleCopy(String assetName, File file) {
         if (!ASSET.equals(assetName)) {
             return false;

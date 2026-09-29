@@ -106,6 +106,8 @@
     <string name="BloodyAiTranslate">✨ Translate</string>
     <string name="BloodyAiTranslateChat">✨ Translate chat</string>
     <string name="BloodySmartReplies">Reply suggestions above the keyboard</string>
+    <string name="BloodyIcons">Blood-red menu icons</string>
+    <string name="BloodyIconsRestart">Fully applies after restarting the app</string>
     <string name="BloodySmartSuggest">✨ Suggest a reply</string>
     <string name="BloodyStatsReplyMe">You reply in</string>
     <string name="BloodyStatsReplyThem">%1$s replies in</string>

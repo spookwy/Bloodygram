@@ -69,6 +69,7 @@ public class BloodySettingsActivity extends UniversalFragment {
     private static final int ID_STREAK_FREEZE = 40;
     private static final int ID_STREAK_TOP = 41;
     private static final int ID_SMART_REPLIES = 42;
+    private static final int ID_BLOODY_ICONS = 43;
 
     private static final String[] TRANSCRIBE_LANGS = {"", "ru-RU", "uk-UA", "en-US"};
 
@@ -128,6 +129,7 @@ public class BloodySettingsActivity extends UniversalFragment {
 
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyAppearance)));
         items.add(UItem.asButton(ID_ACCOUNT_THEME, BloodyStrings.get(R.string.BloodyAccountTheme), BloodyAccounts.themeLabel(currentAccount)));
+        items.add(UItem.asCheck(ID_BLOODY_ICONS, BloodyStrings.get(R.string.BloodyIcons)).setChecked(BloodyConfig.bloodyIcons));
         items.add(UItem.asCheck(ID_SHOW_PEER_ID, BloodyStrings.get(R.string.BloodyShowPeerId)).setChecked(BloodyConfig.showPeerId));
         items.add(UItem.asCheck(ID_STREAK_NAME_COLOR, BloodyStrings.get(R.string.BloodyStreakNameColor)).setChecked(BloodyConfig.streakNameColor));
         items.add(UItem.asCheck(ID_TYPING_ANIMATION, BloodyStrings.get(R.string.BloodyTypingAnimation)).setChecked(BloodyConfig.typingAnimation));
@@ -392,6 +394,10 @@ public class BloodySettingsActivity extends UniversalFragment {
         } else if (item.id == ID_STREAK_CELEBRATION) {
             BloodyConfig.putBoolean("streakCelebration", BloodyConfig.streakCelebration = !BloodyConfig.streakCelebration);
             listView.adapter.update(true);
+        } else if (item.id == ID_BLOODY_ICONS) {
+            BloodyConfig.putBoolean("bloodyIcons", BloodyConfig.bloodyIcons = !BloodyConfig.bloodyIcons);
+            listView.adapter.update(true);
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, BloodyStrings.get(R.string.BloodyIconsRestart)).show();
         } else if (item.id == ID_SMART_REPLIES) {
             BloodyConfig.putBoolean("smartReplies", BloodyConfig.smartReplies = !BloodyConfig.smartReplies);
             listView.adapter.update(true);

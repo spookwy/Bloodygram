@@ -38,6 +38,8 @@ public class BloodyConfig {
     public static boolean streakFreeze;
     /** "✨ Suggest a reply" chip above the input after incoming messages (needs an AI key). */
     public static boolean smartReplies;
+    /** Telegram's colored icon squares recolored into the blood palette (BloodyTheme.iconColor). Takes effect after restart. */
+    public static boolean bloodyIcons;
     public static boolean sendEffects;
     /** Chat background particles: {@link #PARTICLES_OFF}, snow, embers, ash, sparks. */
     public static int chatParticles;
@@ -99,6 +101,7 @@ public class BloodyConfig {
             streakCelebration = prefs.getBoolean("streakCelebration", true);
             streakFreeze = prefs.getBoolean("streakFreeze", false);
             smartReplies = prefs.getBoolean("smartReplies", true);
+            bloodyIcons = prefs.getBoolean("bloodyIcons", true);
             sendEffects = prefs.getBoolean("sendEffects", true);
             // "chatParticles" used to be OFF=0,SNOW=1,EMBERS=2,ASH=3,SPARKS=4; EMBERS was dropped and ASH/SPARKS
             // shifted down a slot. Read under the old key once and remap, so upgrading users keep their choice.
