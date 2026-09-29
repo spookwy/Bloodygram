@@ -92,7 +92,8 @@ public class BloodySecretSaver implements NotificationCenter.NotificationCenterD
             return false;
         }
         return MessageObject.isSecretMedia(owner) || message.isVoiceOnce() || message.isRoundOnce()
-                || owner instanceof TLRPC.TL_message_secret && owner.ttl > 0 && (message.isPhoto() || message.isVideo() || message.isVoice() || message.isRoundVideo());
+                || owner instanceof TLRPC.TL_message_secret && owner.ttl > 0 && (message.isPhoto() || message.isVideo() || message.isVoice() || message.isRoundVideo())
+                || BloodySecretKeeper.wasSecret(owner); // timer already stripped on arrival
     }
 
     private void download(MessageObject message) {

@@ -7,6 +7,7 @@ import android.view.View;
 
 import com.bloodygram.BloodyConfig;
 import com.bloodygram.BloodyStrings;
+import com.bloodygram.ai.BloodyAiProvider;
 import com.bloodygram.keepalive.BloodyKeepAliveService;
 import com.bloodygram.streaks.BloodyStreaks;
 
@@ -61,6 +62,10 @@ public class BloodySettingsActivity extends UniversalFragment {
     private static final int ID_TRANSCRIBE_LANG = 33;
     private static final int ID_WRAPPED = 34;
     private static final int ID_LIQUID_GLASS = 35;
+    private static final int ID_KEEP_SECRET = 36;
+    private static final int ID_TRASH = 37;
+    private static final int ID_AI_PROVIDER = 38;
+    private static final int ID_UPDATE = 39;
 
     private static final String[] TRANSCRIBE_LANGS = {"", "ru-RU", "uk-UA", "en-US"};
 
@@ -90,6 +95,7 @@ public class BloodySettingsActivity extends UniversalFragment {
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyGhostInfo)));
 
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyPrivacySection)));
+        items.add(UItem.asCheck(ID_KEEP_SECRET, BloodyStrings.get(R.string.BloodyKeepSecret)).setChecked(BloodyConfig.keepSecretMedia));
         items.add(UItem.asCheck(ID_SAVE_SECRET, BloodyStrings.get(R.string.BloodySaveSecret)).setChecked(BloodyConfig.saveSecretMedia));
         items.add(UItem.asButton(ID_HIDDEN_CHATS, R.drawable.msg_archive_hide, BloodyStrings.get(R.string.BloodyHiddenChats)));
         if (com.bloodygram.vault.BloodyVault.hasPin()) {
@@ -98,8 +104,11 @@ public class BloodySettingsActivity extends UniversalFragment {
         items.add(UItem.asShadow(BloodyStrings.format(R.string.BloodySaveSecretInfo, BloodyStrings.formatNumber(BloodyConfig.prefs().getInt("secretSaved", 0)))));
 
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyAiSection)));
-        items.add(UItem.asButton(ID_AI_KEY, BloodyStrings.get(R.string.BloodyAiKey), com.bloodygram.ai.BloodyAi.hasKey() ? "••••" + BloodyConfig.aiApiKey.substring(Math.max(0, BloodyConfig.aiApiKey.length() - 4)) : BloodyStrings.get(R.string.BloodyAiKeyNone)));
-        items.add(UItem.asButton(ID_AI_MODEL, BloodyStrings.get(R.string.BloodyAiModel), BloodyConfig.aiModel));
+        BloodyAiProvider aiProvider = BloodyAiProvider.current();
+        String aiKey = aiProvider.key();
+        items.add(UItem.asButton(ID_AI_PROVIDER, BloodyStrings.get(R.string.BloodyAiProvider), aiProvider.name));
+        items.add(UItem.asButton(ID_AI_KEY, BloodyStrings.get(R.string.BloodyAiKey), aiKey.isEmpty() ? BloodyStrings.get(R.string.BloodyAiKeyNone) : "••••" + aiKey.substring(Math.max(0, aiKey.length() - 4))));
+        items.add(UItem.asButton(ID_AI_MODEL, BloodyStrings.get(R.string.BloodyAiModel), aiProvider.model()));
         items.add(UItem.asButton(ID_TRANSCRIBE_LANG, BloodyStrings.get(R.string.BloodyTranscribeLang), transcribeLangName(BloodyConfig.prefs().getString("transcribeLang", ""))));
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyAiInfo)));
 
@@ -108,6 +117,7 @@ public class BloodySettingsActivity extends UniversalFragment {
 
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodySettingsMessages)));
         items.add(UItem.asCheck(ID_SAVE_DELETED, BloodyStrings.get(R.string.BloodySaveDeleted)).setChecked(BloodyConfig.saveDeletedMessages));
+        items.add(UItem.asButton(ID_TRASH, R.drawable.msg_delete, BloodyStrings.get(R.string.BloodyTrash)));
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodySaveDeletedInfo)));
         items.add(UItem.asCheck(ID_SAVE_EDITS, BloodyStrings.get(R.string.BloodySaveEdits)).setChecked(BloodyConfig.saveEditHistory));
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodySaveEditsInfo)));
@@ -130,12 +140,20 @@ public class BloodySettingsActivity extends UniversalFragment {
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyAppearanceInfo)));
 
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyChatEffect)));
+        // Sparks/fire dropped from the picker (see BloodyConfig#load) — map slider positions to values explicitly
+        // rather than relying on them being contiguous, since PARTICLES_SPARKS sits in the middle of the enum.
+        int[] effectValues = {BloodyConfig.PARTICLES_OFF, BloodyConfig.PARTICLES_SNOW, BloodyConfig.PARTICLES_ASH, BloodyConfig.PARTICLES_TOPO};
         String[] effects = {
                 BloodyStrings.get(R.string.BloodyEffectOff), BloodyStrings.get(R.string.BloodyEffectSnow),
-                BloodyStrings.get(R.string.BloodyEffectAsh), BloodyStrings.get(R.string.BloodyEffectSparks),
-                BloodyStrings.get(R.string.BloodyEffectTopo)
+                BloodyStrings.get(R.string.BloodyEffectAsh), BloodyStrings.get(R.string.BloodyEffectTopo)
         };
-        items.add(UItem.asSlideView(effects, Math.max(0, Math.min(effects.length - 1, BloodyConfig.chatParticles)), index -> BloodyConfig.putInt("chatParticles2", BloodyConfig.chatParticles = index)));
+        int effectChosen = 0;
+        for (int i = 0; i < effectValues.length; i++) {
+            if (effectValues[i] == BloodyConfig.chatParticles) {
+                effectChosen = i;
+            }
+        }
+        items.add(UItem.asSlideView(effects, effectChosen, index -> BloodyConfig.putInt("chatParticles2", BloodyConfig.chatParticles = effectValues[index])));
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyBubbleRadius)));
         String[] radii = new String[BUBBLE_RADII.length];
         int chosenRadius = 0;
@@ -150,6 +168,14 @@ public class BloodySettingsActivity extends UniversalFragment {
             MessagesController.getGlobalMainSettings().edit().putInt("bubbleRadius", SharedConfig.bubbleRadius).apply();
         }));
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyChatEffectInfo)));
+
+        items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyRoundCamera)));
+        String[] roundCameraModes = {
+                BloodyStrings.get(R.string.BloodyRoundCameraRemember), BloodyStrings.get(R.string.BloodyRoundCameraFront),
+                BloodyStrings.get(R.string.BloodyRoundCameraBack)
+        };
+        items.add(UItem.asSlideView(roundCameraModes, Math.max(0, Math.min(roundCameraModes.length - 1, BloodyConfig.roundCameraMode)), index -> BloodyConfig.setRoundCameraMode(index)));
+        items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyRoundCameraInfo)));
 
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyBackground)));
         items.add(UItem.asCheck(ID_KEEP_ALIVE, BloodyStrings.get(R.string.BloodyKeepAlive)).setChecked(BloodyConfig.keepAlive));
@@ -202,6 +228,8 @@ public class BloodySettingsActivity extends UniversalFragment {
             items.add(UItem.asButton(ID_STREAK_RECALC, BloodyStrings.get(R.string.BloodyStreakRecalc)).accent());
             items.add(UItem.asShadow(null));
         }
+        items.add(UItem.asButton(ID_UPDATE, R.drawable.msg_retry, BloodyStrings.get(R.string.BloodyUpdateCheck)));
+        items.add(UItem.asShadow(com.bloodygram.update.BloodyUpdater.versionLabel()));
     }
 
     private void refreshDialogs() {
@@ -268,31 +296,42 @@ public class BloodySettingsActivity extends UniversalFragment {
         } else if (item.id == ID_LIQUID_GLASS) {
             BloodyMotion.setLiquidGlass(!BloodyMotion.isLiquidGlassOn());
             listView.adapter.update(true);
-        } else if (item.id == ID_AI_KEY) {
-            android.widget.EditText input = new android.widget.EditText(getParentActivity());
-            input.setHint("sk-ant-...");
-            input.setText(BloodyConfig.aiApiKey);
-            input.setSingleLine(true);
-            input.setTextColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogTextBlack));
-            android.widget.FrameLayout box = new android.widget.FrameLayout(getParentActivity());
-            box.setPadding(org.telegram.messenger.AndroidUtilities.dp(24), 0, org.telegram.messenger.AndroidUtilities.dp(24), 0);
-            box.addView(input);
+        } else if (item.id == ID_AI_PROVIDER) {
+            BloodyAiProvider[] all = BloodyAiProvider.ALL;
+            String[] names = new String[all.length];
+            for (int i = 0; i < all.length; i++) {
+                names[i] = all[i].label();
+            }
             new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
-                    .setTitle(BloodyStrings.get(R.string.BloodyAiKey))
-                    .setMessage(BloodyStrings.get(R.string.BloodyAiKeyHint))
-                    .setView(box)
-                    .setPositiveButton(BloodyStrings.get(R.string.BloodySave), (d, w) -> {
-                        BloodyConfig.putString("aiApiKey", BloodyConfig.aiApiKey = input.getText().toString().trim());
+                    .setTitle(BloodyStrings.get(R.string.BloodyAiProvider))
+                    .setItems(names, (d, which) -> {
+                        BloodyAiProvider.select(all[which]);
                         listView.adapter.update(true);
                     })
-                    .setNegativeButton(BloodyStrings.get(R.string.BloodyClose), null)
                     .show();
+        } else if (item.id == ID_AI_KEY) {
+            BloodyAiProvider provider = BloodyAiProvider.current();
+            askText(BloodyStrings.get(R.string.BloodyAiKey), BloodyStrings.format(R.string.BloodyAiKeyHint, provider.keySite), provider.key(), value -> {
+                provider.setKey(value);
+                listView.adapter.update(true);
+            });
         } else if (item.id == ID_AI_MODEL) {
+            BloodyAiProvider provider = BloodyAiProvider.current();
+            String[] names = new String[provider.models.length + 1];
+            System.arraycopy(provider.models, 0, names, 0, provider.models.length);
+            names[names.length - 1] = BloodyStrings.get(R.string.BloodyAiModelCustom);
             new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
                     .setTitle(BloodyStrings.get(R.string.BloodyAiModel))
-                    .setItems(com.bloodygram.ai.BloodyAi.MODELS, (d, which) -> {
-                        BloodyConfig.putString("aiModel", BloodyConfig.aiModel = com.bloodygram.ai.BloodyAi.MODELS[which]);
-                        listView.adapter.update(true);
+                    .setItems(names, (d, which) -> {
+                        if (which < provider.models.length) {
+                            provider.setModel(provider.models[which]);
+                            listView.adapter.update(true);
+                        } else {
+                            askText(BloodyStrings.get(R.string.BloodyAiModel), null, provider.model(), value -> {
+                                provider.setModel(value);
+                                listView.adapter.update(true);
+                            });
+                        }
                     })
                     .show();
         } else if (item.id == ID_TRANSCRIBE_LANG) {
@@ -348,6 +387,13 @@ public class BloodySettingsActivity extends UniversalFragment {
         } else if (item.id == ID_STREAK_CELEBRATION) {
             BloodyConfig.putBoolean("streakCelebration", BloodyConfig.streakCelebration = !BloodyConfig.streakCelebration);
             listView.adapter.update(true);
+        } else if (item.id == ID_UPDATE) {
+            com.bloodygram.update.BloodyUpdater.checkNow(this);
+        } else if (item.id == ID_TRASH) {
+            presentFragment(new com.bloodygram.deleted.BloodyTrashActivity());
+        } else if (item.id == ID_KEEP_SECRET) {
+            BloodyConfig.putBoolean("keepSecretMedia", BloodyConfig.keepSecretMedia = !BloodyConfig.keepSecretMedia);
+            listView.adapter.update(true);
         } else if (item.id == ID_SAVE_SECRET) {
             BloodyConfig.putBoolean("saveSecretMedia", BloodyConfig.saveSecretMedia = !BloodyConfig.saveSecretMedia);
             listView.adapter.update(true);
@@ -363,6 +409,28 @@ public class BloodySettingsActivity extends UniversalFragment {
             BloodyStreaks.getInstance(currentAccount).recalcAll();
             BulletinFactory.of(this).createSimpleBulletin(R.raw.info, BloodyStrings.get(R.string.BloodyStreakRecalcDone)).show();
         }
+    }
+
+    private void askText(String title, String message, String value, org.telegram.messenger.Utilities.Callback<String> onSave) {
+        if (getParentActivity() == null) {
+            return;
+        }
+        android.widget.EditText input = new android.widget.EditText(getParentActivity());
+        input.setText(value);
+        input.setSingleLine(true);
+        input.setTextColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogTextBlack));
+        android.widget.FrameLayout box = new android.widget.FrameLayout(getParentActivity());
+        box.setPadding(org.telegram.messenger.AndroidUtilities.dp(24), 0, org.telegram.messenger.AndroidUtilities.dp(24), 0);
+        box.addView(input);
+        org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
+                .setTitle(title)
+                .setView(box)
+                .setPositiveButton(BloodyStrings.get(R.string.BloodySave), (d, w) -> onSave.run(input.getText().toString().trim()))
+                .setNegativeButton(BloodyStrings.get(R.string.BloodyClose), null);
+        if (message != null) {
+            builder.setMessage(message);
+        }
+        builder.show();
     }
 
     private static String transcribeLangName(String tag) {

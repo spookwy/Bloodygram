@@ -3,7 +3,6 @@ package com.bloodygram.ui;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
-import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
@@ -18,6 +17,7 @@ import android.os.SystemClock;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 
 import com.bloodygram.BloodyConfig;
 
@@ -176,20 +176,31 @@ public class BloodyFx {
     /**
      * Contour lines on black, like a topographic map. A value-noise field is sampled on a grid and its
      * iso-lines (marching squares) are stitched into continuous, midpoint-smoothed paths — no dots at cell
-     * joins and no visible corners. The pattern is static (it does not drift), so it is computed once and cached.
+     * joins and no visible corners. The field slowly drifts in noise-space so the contours move, but each
+     * grid corner drifts along its own slow orbit (phase/radius/direction derived from its own position via
+     * a low-frequency "flow" field) instead of the whole pattern sliding in one shared direction — so
+     * different regions appear to breathe/swirl independently rather than the map scrolling as one sheet.
+     * Recomputed into a cached bitmap roughly every REBUILD_MS (marching squares is too costly for 60fps).
      */
     private static class TopoMap {
         private static final int CELL_DP = 26;   // grid resolution: bigger = coarser, rounder lines
         private static final int BANDS = 6;       // number of stacked contour levels (fewer = sparser)
         private static final float FREQ = 0.0042f; // noise frequency: lower = broader, more spaced-out contours
+        private static final float FLOW_FREQ = 0.09f; // frequency of the per-corner direction/speed field (in cell units) — low, so nearby corners drift alike but far corners diverge
+        private static final long REBUILD_MS = 90; // recompute cadence (contour extraction is too costly per-frame)
+        private static final float DRIFT_SPEED = 0.00004f; // noise-space units per ms each corner's orbit advances
 
         private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint backdrop = new Paint();
         private float[][] field; // noise value per grid corner, [row][col]
+        private float[][] flowAngle; // per-corner drift direction (radians), from a low-freq noise field
+        private float[][] flowRadius; // per-corner orbit radius in noise-space, from a second low-freq field
         private int cols, rows;
         private float cell;
         private int w, h;
         private Bitmap frameBitmap;
+        private long startTime;
+        private long lastRebuild;
 
         TopoMap() {
             line.setStyle(Paint.Style.STROKE);
@@ -201,27 +212,56 @@ public class BloodyFx {
         }
 
         void draw(View view, Canvas canvas, int scrollOffset) {
+            long now = SystemClock.uptimeMillis();
             if (frameBitmap == null || w != view.getWidth() || h != view.getHeight()) {
                 w = view.getWidth();
                 h = view.getHeight();
                 if (w == 0 || h == 0) {
                     return;
                 }
+                startTime = now;
+                lastRebuild = 0; // force an immediate build below
+                setupGrid();
+            }
+            if (now - lastRebuild >= REBUILD_MS) {
+                lastRebuild = now;
+                updateField(now - startTime);
                 render();
             }
             canvas.drawBitmap(frameBitmap, 0, 0, null);
+            view.invalidate();
         }
 
-        private void render() {
+        private void setupGrid() {
             cell = dp(CELL_DP);
             cols = (int) (w / cell) + 3;
             rows = (int) (h / cell) + 3;
             field = new float[rows][cols];
+            flowAngle = new float[rows][cols];
+            flowRadius = new float[rows][cols];
             for (int r = 0; r < rows; r++) {
                 for (int c = 0; c < cols; c++) {
-                    field[r][c] = noise(c * cell * FREQ, r * cell * FREQ);
+                    // each corner gets its own drift direction and orbit size from two independent
+                    // low-frequency noise fields, so neighboring regions move differently from each other
+                    flowAngle[r][c] = noiseOctave(c * FLOW_FREQ + 91.1f, r * FLOW_FREQ + 7.3f) * (float) (Math.PI * 2);
+                    flowRadius[r][c] = 0.4f + noiseOctave(c * FLOW_FREQ * 1.7f - 33.9f, r * FLOW_FREQ * 1.7f + 58.2f) * 0.9f;
                 }
             }
+        }
+
+        /** Each corner samples the base noise field at a point that orbits its own center, own phase, own radius. */
+        private void updateField(long elapsed) {
+            for (int r = 0; r < rows; r++) {
+                for (int c = 0; c < cols; c++) {
+                    float phase = elapsed * DRIFT_SPEED + flowAngle[r][c];
+                    float ox = (float) Math.cos(phase) * flowRadius[r][c];
+                    float oy = (float) Math.sin(phase * 1.3f + flowAngle[r][c]) * flowRadius[r][c];
+                    field[r][c] = noise(c * cell * FREQ + ox, r * cell * FREQ + oy);
+                }
+            }
+        }
+
+        private void render() {
             if (frameBitmap != null) {
                 frameBitmap.recycle();
             }
@@ -412,16 +452,19 @@ public class BloodyFx {
         }
     }
 
-    /** Ash drifts down; sparks are glowing embers floating up from a warm glow at the bottom. */
+    /** Ash drifts down; sparks are glowing embers floating up from a flickering fire at the bottom. */
     private static class Particles {
         static final int[] SPARK_COLORS = {0xFFFFE6A6, 0xFFFFC24A, 0xFFFF8A2A, 0xFFFF5A1F};
+        private static final int FLAME_LAYERS = 3; // stacked flame silhouettes of different heights/speeds, like real fire licks
         final int mode;
         final int count;
         final float[] x, y, vx, vy, size, phase, life, born;
         final int[] color, ci;
         final RectF rect = new RectF();
         final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        final Paint bottom = new Paint();
+        final Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG); // soft halo behind each spark, additive so overlaps brighten like real embers
+        final Paint bottom = new Paint(Paint.ANTI_ALIAS_FLAG);
+        final Path flamePath = new Path();
         long lastTime;
         int w, h;
 
@@ -440,6 +483,8 @@ public class BloodyFx {
             ci = new int[count];
             if (mode == BloodyConfig.PARTICLES_SPARKS) {
                 bottom.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.ADD));
+                bottom.setStyle(Paint.Style.FILL);
+                glow.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.ADD));
             }
         }
 
@@ -476,10 +521,6 @@ public class BloodyFx {
                 if (w == 0 || h == 0) {
                     return;
                 }
-                if (mode == BloodyConfig.PARTICLES_SPARKS) {
-                    bottom.setShader(new LinearGradient(0, h, 0, h - h * 0.32f,
-                            new int[]{0xFFFF6A18, 0x22FF4A0A, 0x00000000}, new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
-                }
                 for (int i = 0; i < count; i++) {
                     spawn(i, now, true);
                 }
@@ -489,7 +530,7 @@ public class BloodyFx {
             lastTime = nowMs;
 
             if (mode == BloodyConfig.PARTICLES_SPARKS) {
-                canvas.drawRect(0, h - h * 0.32f, w, h, bottom);
+                drawFire(canvas, now);
             }
 
             for (int i = 0; i < count; i++) {
@@ -515,23 +556,65 @@ public class BloodyFx {
                     canvas.rotate(age / 20f + phase[i] * 57, x[i], y[i]);
                     canvas.drawRect(x[i] - size[i], y[i] - size[i] * 0.6f, x[i] + size[i], y[i] + size[i] * 0.6f, paint);
                     canvas.restore();
-                } else { // sparks — crisp glowing embers
+                } else { // sparks — glowing embers: a soft additive halo behind a hot core, like a real burning cinder
                     float heightFade = Math.max(0.12f, Math.min(1f, y[i] / (h * 0.85f))); // dimmer higher up
                     float flicker = 0.6f + 0.4f * (float) Math.sin(age / 130f + phase[i] * 3);
-                    paint.setColorFilter(null);
-                    paint.setColor(SPARK_COLORS[ci[i]]);
-                    paint.setAlpha((int) (255 * a * heightFade * flicker));
+                    int sparkAlpha = (int) (255 * a * heightFade * flicker);
                     float r = size[i];
                     float stretch = 1f + Math.min(2.6f, -vy[i] * 22f); // faster embers become short streaks
+
+                    glow.setColorFilter(null);
+                    glow.setShader(new RadialGradient(x[i], y[i], r * 4.5f,
+                            new int[]{ColorUtils.setAlphaComponent(SPARK_COLORS[ci[i]], sparkAlpha / 2), ColorUtils.setAlphaComponent(SPARK_COLORS[ci[i]], 0)},
+                            null, Shader.TileMode.CLAMP));
+                    canvas.drawCircle(x[i], y[i], r * 4.5f, glow);
+
+                    // hot white-yellow core fading to the ember's own color at the rim, instead of one flat fill
+                    paint.setColorFilter(null);
+                    paint.setShader(new RadialGradient(x[i], y[i], Math.max(r, 0.1f),
+                            new int[]{ColorUtils.setAlphaComponent(0xFFFFF3D0, sparkAlpha), ColorUtils.setAlphaComponent(SPARK_COLORS[ci[i]], sparkAlpha)},
+                            new float[]{0f, 1f}, Shader.TileMode.CLAMP));
                     if (stretch > 1.4f) {
                         rect.set(x[i] - r, y[i] - r * stretch, x[i] + r, y[i] + r);
                         canvas.drawRoundRect(rect, r, r, paint);
                     } else {
                         canvas.drawCircle(x[i], y[i], r, paint);
                     }
+                    paint.setShader(null);
                 }
             }
             view.invalidate();
+        }
+
+        /**
+         * A handful of stacked, wavy flame silhouettes instead of one flat linear-gradient band: each layer
+         * has its own height, speed and color (dark red base to bright orange tip) and its top edge undulates
+         * from a few summed sine waves at different phases, so the "fire line" flickers unevenly like real
+         * flame licks rather than breathing up and down as a straight edge.
+         */
+        private void drawFire(Canvas canvas, float now) {
+            float baseline = h;
+            float maxRise = h * 0.34f;
+            int[] layerColors = {0x55B0220E, 0x66E04A16, 0x77FF7A1A};
+            float[] layerHeight = {0.65f, 0.85f, 1f};
+            float[] layerSpeed = {520f, 380f, 300f};
+            for (int layer = 0; layer < FLAME_LAYERS; layer++) {
+                float amp = maxRise * layerHeight[layer];
+                float t = now / layerSpeed[layer] + layer * 17.3f;
+                flamePath.reset();
+                flamePath.moveTo(0, baseline);
+                int steps = 10;
+                for (int s = 0; s <= steps; s++) {
+                    float fx = w * s / (float) steps;
+                    float n = (float) (Math.sin(t + s * 0.9f) * 0.5 + Math.sin(t * 1.7f + s * 1.7f + layer) * 0.3 + Math.sin(t * 0.6f - s * 0.5f) * 0.2);
+                    float fy = baseline - amp * (0.55f + 0.45f * n);
+                    flamePath.lineTo(fx, fy);
+                }
+                flamePath.lineTo(w, baseline);
+                flamePath.close();
+                bottom.setColor(layerColors[layer]);
+                canvas.drawPath(flamePath, bottom);
+            }
         }
     }
 

@@ -370,7 +370,8 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
         upload = new TelegramRoundVideoUpload(currentAccount, secretChat);
         activeOutputResolution = SharedSettings.roundVideoOutputResolution.get();
         session = new RoundVideoSession.Builder(getContext(), textureView)
-                .setInitialFacing(SharedSettings.roundVideoLastCamera.get())
+                .setInitialFacing(com.bloodygram.BloodyConfig.roundCameraStartsFront() // Bloodygram: remembered/forced camera choice for round videos
+                        ? RoundVideoSession.CameraFacing.FRONT : RoundVideoSession.CameraFacing.BACK)
                 .setOutputResolution(activeOutputResolution)
                 .setVideoBitrate(SharedSettings.roundVideoVideoBitrate.get())
                 .setCameraResolution(SharedSettings.roundVideoCameraResolution.get())
@@ -696,6 +697,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
             capabilities = cameraCapabilities;
             if (cameraCapabilities.getActiveFacing() != null) {
                 SharedSettings.roundVideoLastCamera.set(cameraCapabilities.getActiveFacing());
+                com.bloodygram.BloodyConfig.setLastRoundCameraFront(cameraCapabilities.getActiveFacing() == RoundVideoSession.CameraFacing.FRONT); // Bloodygram
             }
             updateButtons();
         }

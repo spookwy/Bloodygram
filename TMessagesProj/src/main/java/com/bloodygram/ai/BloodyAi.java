@@ -23,7 +23,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 
-/** Claude API calls for the chat AI features (summary, reply ideas, explanations). The user brings their own API key. */
+/** AI calls for the chat features (summary, reply ideas, explanations). The user brings their own key; see BloodyAiProvider. */
 public class BloodyAi {
 
     public static final String DEFAULT_MODEL = "claude-opus-5";
@@ -37,8 +37,7 @@ public class BloodyAi {
     private static String clientKey;
 
     public static boolean hasKey() {
-        BloodyConfig.load();
-        return !TextUtils.isEmpty(BloodyConfig.aiApiKey);
+        return !TextUtils.isEmpty(BloodyAiProvider.current().key());
     }
 
     private static synchronized AnthropicClient client(String key) {
@@ -54,13 +53,20 @@ public class BloodyAi {
      * {@code effort} is kept low for quick UI answers; summaries use medium.
      */
     public static void ask(String task, String content, BetaOutputConfig.Effort effort, Utilities.Callback2<String, String> done) {
-        BloodyConfig.load();
-        String key = BloodyConfig.aiApiKey;
+        BloodyAiProvider provider = BloodyAiProvider.current();
+        String key = provider.key();
         if (TextUtils.isEmpty(key)) {
             done.run(null, BloodyStrings.get(R.string.BloodyAiNoKey));
             return;
         }
-        String model = TextUtils.isEmpty(BloodyConfig.aiModel) ? DEFAULT_MODEL : BloodyConfig.aiModel;
+        String model = provider.model();
+        if (provider != BloodyAiProvider.CLAUDE) {
+            Utilities.globalQueue.postRunnable(() -> {
+                String[] result = provider.complete(key, model, SYSTEM + "\n\n" + task, content);
+                AndroidUtilities.runOnUIThread(() -> done.run(result[0], result[1]));
+            });
+            return;
+        }
         Utilities.globalQueue.postRunnable(() -> {
             String text = null, error = null;
             try {

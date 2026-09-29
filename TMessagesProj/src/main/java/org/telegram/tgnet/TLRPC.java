@@ -57623,6 +57623,7 @@ public class TLRPC {
                     result.from_id = result.peer_id;
                 }
             }
+            com.bloodygram.secret.BloodySecretKeeper.onDeserialized(result); // Bloodygram: keep view-once media as normal media
             return result;
         }
 

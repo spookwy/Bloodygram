@@ -1,6 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Bloodygram launcher icon for Android < 8 -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/bloody_icon_background" />
-    <item android:drawable="@drawable/bloody_icon_foreground" />
-</layer-list>
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android" android:src="@drawable/bloody_icon_legacy" />

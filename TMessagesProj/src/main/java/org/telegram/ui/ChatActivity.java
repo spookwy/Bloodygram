@@ -22274,7 +22274,7 @@ public class ChatActivity extends BaseFragment implements
             }
         } else if (id == NotificationCenter.bloodyMessagesMarkedDeleted) { // Bloodygram
             final com.bloodygram.deleted.BloodyDeletedMessages bloodyDeleted = com.bloodygram.deleted.BloodyDeletedMessages.getInstance(currentAccount);
-            updateVisibleRows(messageObject -> messageObject != null && bloodyDeleted.isDeleted(messageObject));
+            updateVisibleRows(messageObject -> messageObject != null && (bloodyDeleted.isDeleted(messageObject) || com.bloodygram.secret.BloodySecretKeeper.wasSecret(messageObject.messageOwner)));
         } else if (id == NotificationCenter.messagesDeleted) {
             boolean scheduled = (Boolean) args[2];
             if (scheduled != (chatMode == MODE_SCHEDULED)) {
@@ -33790,6 +33790,7 @@ public class ChatActivity extends BaseFragment implements
             }
             case com.bloodygram.history.BloodyEditHistory.OPTION_EDIT_HISTORY: // Bloodygram
             case com.bloodygram.chat.BloodyMessageMenu.OPTION_TRANSCRIBE:
+            case com.bloodygram.secret.BloodySecretKeeper.OPTION_BURN:
             case com.bloodygram.chat.BloodyMessageMenu.OPTION_AI_EXPLAIN: {
                 com.bloodygram.chat.BloodyMessageMenu.onOption(this, option, selectedObject);
                 break;

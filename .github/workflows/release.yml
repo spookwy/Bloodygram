@@ -1,0 +1,87 @@
+# Builds the signed release APK and publishes it as a GitHub release when a tag v<version> is pushed.
+# The in-app updater (BloodyUpdater) reads the latest release from this repo.
+#
+# Repository secrets:
+#   BLOODY_APP_ID, BLOODY_APP_HASH   - Telegram api_id / api_hash (my.telegram.org)
+#   BLOODY_KEYSTORE_BASE64           - release keystore, base64
+#   BLOODY_STORE_PASSWORD, BLOODY_KEY_ALIAS, BLOODY_KEY_PASSWORD
+name: Release APK
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: SDK packages
+        run: sdkmanager "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-36" "build-tools;36.0.0" > /dev/null
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle', 'gradle.properties', 'gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Keys from secrets
+        env:
+          BLOODY_APP_ID: ${{ secrets.BLOODY_APP_ID }}
+          BLOODY_APP_HASH: ${{ secrets.BLOODY_APP_HASH }}
+          BLOODY_KEYSTORE_BASE64: ${{ secrets.BLOODY_KEYSTORE_BASE64 }}
+          BLOODY_STORE_PASSWORD: ${{ secrets.BLOODY_STORE_PASSWORD }}
+          BLOODY_KEY_ALIAS: ${{ secrets.BLOODY_KEY_ALIAS }}
+          BLOODY_KEY_PASSWORD: ${{ secrets.BLOODY_KEY_PASSWORD }}
+        run: |
+          echo "$BLOODY_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/bloodygram-release.jks"
+          {
+            echo "sdk.dir=$ANDROID_HOME"
+            echo "BLOODY_APP_ID=$BLOODY_APP_ID"
+            echo "BLOODY_APP_HASH=$BLOODY_APP_HASH"
+            echo "BLOODY_KEYSTORE=$RUNNER_TEMP/bloodygram-release.jks"
+            echo "BLOODY_STORE_PASSWORD=$BLOODY_STORE_PASSWORD"
+            echo "BLOODY_KEY_ALIAS=$BLOODY_KEY_ALIAS"
+            echo "BLOODY_KEY_PASSWORD=$BLOODY_KEY_PASSWORD"
+          } > local.properties
+
+      - name: Build
+        run: |
+          chmod +x gradlew
+          ./gradlew :TMessagesProj_App:assembleAfatRelease --no-daemon --stacktrace
+
+      - name: Name the APK
+        id: apk
+        run: |
+          VERSION=$(grep '^BLOODY_VERSION_NAME=' gradle.properties | cut -d= -f2 | tr -d '\r')
+          cp TMessagesProj_App/build/outputs/apk/afat/release/app.apk "Bloodygram-$VERSION.apk"
+          echo "file=Bloodygram-$VERSION.apk" >> "$GITHUB_OUTPUT"
+
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ steps.apk.outputs.file }}
+          generate_release_notes: true
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        with:
+          name: bloodygram-apk
+          path: ${{ steps.apk.outputs.file }}

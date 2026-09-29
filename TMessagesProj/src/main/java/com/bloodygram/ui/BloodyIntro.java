@@ -71,7 +71,7 @@ public class BloodyIntro {
 
         LogoView(Context context) {
             super(context);
-            icons[0] = ContextCompat.getDrawable(context, R.drawable.bloody_icon_foreground);
+            icons[0] = ContextCompat.getDrawable(context, R.drawable.bloody_logo);
             icons[1] = tinted(context, R.drawable.msg_delete);
             icons[2] = BloodyFire.drawable(dp(96), BloodyFire.TIER_RED).getConstantState().newDrawable().mutate(); // the cached one is shared
             icons[3] = tinted(context, R.drawable.ghost);

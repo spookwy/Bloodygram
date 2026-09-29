@@ -115,6 +115,9 @@ public class BloodyChatMenu {
         if (BloodyVault.hasPin()) {
             io.add(R.drawable.msg_archive_hide, BloodyStrings.get(R.string.BloodyHiddenChats), () -> BloodyVault.openHiddenChats(fragment));
         }
+        if (BloodyConfig.saveDeletedMessages) {
+            io.add(R.drawable.msg_delete, BloodyStrings.get(R.string.BloodyTrash), () -> fragment.presentFragment(new com.bloodygram.deleted.BloodyTrashActivity()));
+        }
     }
 
     public static void refreshTitle(DialogsActivity fragment) {

@@ -643,8 +643,13 @@ public class MessageObject {
         return emojiOnlyCount;
     }
 
+    public Boolean bloodySecretSpoiler; // Bloodygram: cached, hasMediaSpoilers() is called on every draw
+
     public boolean hasMediaSpoilers() {
-        return !isRepostPreview && (messageOwner.media != null && messageOwner.media.spoiler || needDrawBluredPreview()) || isHiddenSensitive();
+        if (bloodySecretSpoiler == null) { // Bloodygram: kept view-once media comes in under a spoiler, revealed per chat visit
+            bloodySecretSpoiler = com.bloodygram.secret.BloodySecretKeeper.needsSpoiler(this);
+        }
+        return !isRepostPreview && (messageOwner.media != null && messageOwner.media.spoiler || needDrawBluredPreview() || bloodySecretSpoiler) || isHiddenSensitive();
     }
 
     public Boolean isSensitiveCached;

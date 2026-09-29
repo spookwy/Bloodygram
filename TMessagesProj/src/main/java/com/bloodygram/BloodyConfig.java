@@ -29,6 +29,8 @@ public class BloodyConfig {
     public static boolean ghostTyping;
     public static boolean ghostStories;
     public static boolean saveSecretMedia;
+    /** Incoming view-once / timed media stays in the chat as normal media (see BloodySecretKeeper). */
+    public static boolean keepSecretMedia;
     public static boolean streakReminder;
     public static int streakReminderHour;
     public static boolean streakCelebration;
@@ -40,12 +42,20 @@ public class BloodyConfig {
     public static int messageFont;
     public static String aiApiKey;
     public static String aiModel;
+    /** Which camera opens a round video (кружок) recording: {@link #ROUND_CAMERA_REMEMBER}, front, or back. */
+    public static int roundCameraMode;
+    /** Last camera used for a round video, only consulted when {@link #roundCameraMode} is REMEMBER. */
+    public static boolean lastRoundCameraFront = true;
 
     public static final int PARTICLES_OFF = 0;
     public static final int PARTICLES_SNOW = 1;
     public static final int PARTICLES_ASH = 2;
     public static final int PARTICLES_SPARKS = 3;
     public static final int PARTICLES_TOPO = 4;
+
+    public static final int ROUND_CAMERA_REMEMBER = 0;
+    public static final int ROUND_CAMERA_FRONT = 1;
+    public static final int ROUND_CAMERA_BACK = 2;
     /** Unix time when counting of deleted messages started (shown in the stats window). */
     public static int deletedSince;
 
@@ -79,6 +89,7 @@ public class BloodyConfig {
             ghostTyping = prefs.getBoolean("ghostTyping", true);
             ghostStories = prefs.getBoolean("ghostStories", true);
             saveSecretMedia = prefs.getBoolean("saveSecretMedia", true);
+            keepSecretMedia = prefs.getBoolean("keepSecretMedia", true);
             streakReminder = prefs.getBoolean("streakReminder", true);
             streakReminderHour = prefs.getInt("streakReminderHour", 21);
             streakCelebration = prefs.getBoolean("streakCelebration", true);
@@ -95,10 +106,18 @@ public class BloodyConfig {
             if (chatParticles < 0 || chatParticles > PARTICLES_TOPO) {
                 chatParticles = PARTICLES_SPARKS;
             }
+            if (chatParticles == PARTICLES_SPARKS) {
+                // Dropped from the settings UI (fire/sparks looked bad and wasn't worth iterating on further) —
+                // silently move anyone who had it selected to Off rather than leaving an unreachable value picked.
+                chatParticles = PARTICLES_OFF;
+                prefs.edit().putInt("chatParticles2", chatParticles).apply();
+            }
             springAnimations = prefs.getBoolean("springAnimations", true);
             messageFont = prefs.getInt("messageFont", 0);
             aiApiKey = prefs.getString("aiApiKey", "");
             aiModel = prefs.getString("aiModel", com.bloodygram.ai.BloodyAi.DEFAULT_MODEL);
+            roundCameraMode = prefs.getInt("roundCameraMode", ROUND_CAMERA_REMEMBER);
+            lastRoundCameraFront = prefs.getBoolean("lastRoundCameraFront", true);
             deletedSince = prefs.getInt("deletedSince", 0);
             if (deletedSince == 0) {
                 deletedSince = (int) (System.currentTimeMillis() / 1000);
@@ -174,6 +193,27 @@ public class BloodyConfig {
 
     public static void setEraseDust(boolean value) {
         putBoolean("eraseDust", eraseDust = value);
+    }
+
+    public static void setRoundCameraMode(int value) {
+        putInt("roundCameraMode", roundCameraMode = value);
+    }
+
+    /** Which camera a new round video recording should start with. */
+    public static boolean roundCameraStartsFront() {
+        load();
+        if (roundCameraMode == ROUND_CAMERA_FRONT) {
+            return true;
+        }
+        if (roundCameraMode == ROUND_CAMERA_BACK) {
+            return false;
+        }
+        return lastRoundCameraFront;
+    }
+
+    /** Called after switching cameras mid-recording, so a REMEMBER mode carries the choice into the next round video. */
+    public static void setLastRoundCameraFront(boolean front) {
+        putBoolean("lastRoundCameraFront", lastRoundCameraFront = front);
     }
 
     // region per account

@@ -5,18 +5,29 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import android.text.TextUtils;
+
 import com.bloodygram.BloodyConfig;
 
+import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.NativeByteBuffer;
+import org.telegram.tgnet.TLRPC;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -105,6 +116,101 @@ public class BloodyDeletedMessages {
         long channelId = messageObject.messageOwner.peer_id != null ? messageObject.messageOwner.peer_id.channel_id : 0;
         Set<Integer> ids = deleted.get(channelId);
         return ids != null && ids.contains(messageObject.getId());
+    }
+
+    public static class TrashItem {
+        public final long dialogId;
+        public final MessageObject message;
+        public final int deletedAt;
+
+        TrashItem(long dialogId, MessageObject message, int deletedAt) {
+            this.dialogId = dialogId;
+            this.message = message;
+            this.deletedAt = deletedAt;
+        }
+    }
+
+    /**
+     * Every kept deleted message, newest deletion first. Our DB only has ids; the messages themselves are still
+     * in Telegram's messages_v2 (the deletion was never applied), so they are read from there.
+     */
+    public void loadTrash(Utilities.Callback<ArrayList<TrashItem>> done) {
+        queue.postRunnable(() -> {
+            ArrayList<long[]> rows = new ArrayList<>(); // channel_id, mid, deleted_at
+            try (Cursor cursor = db().getReadableDatabase().rawQuery("SELECT channel_id, mid, deleted_at FROM deleted_messages ORDER BY deleted_at DESC, mid DESC LIMIT 2000", null)) {
+                while (cursor.moveToNext()) {
+                    rows.add(new long[]{cursor.getLong(0), cursor.getInt(1), cursor.getInt(2)});
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            MessagesStorage storage = MessagesStorage.getInstance(account);
+            storage.getStorageQueue().postRunnable(() -> readMessages(storage, rows, done));
+        });
+    }
+
+    private void readMessages(MessagesStorage storage, ArrayList<long[]> rows, Utilities.Callback<ArrayList<TrashItem>> done) {
+        HashMap<String, TLRPC.Message> found = new HashMap<>();
+        ArrayList<Long> userIds = new ArrayList<>();
+        ArrayList<Long> chatIds = new ArrayList<>();
+        ArrayList<TLRPC.User> users = new ArrayList<>();
+        ArrayList<TLRPC.Chat> chats = new ArrayList<>();
+        try {
+            // group ids per channel (0 = private chats and basic groups, where ids are unique per account)
+            HashMap<Long, ArrayList<Long>> byChannel = new HashMap<>();
+            for (long[] row : rows) {
+                byChannel.computeIfAbsent(row[0], k -> new ArrayList<>()).add(row[1]);
+            }
+            for (Map.Entry<Long, ArrayList<Long>> entry : byChannel.entrySet()) {
+                long channelId = entry.getKey();
+                String where = channelId != 0 ? "uid = " + (-channelId) : "is_channel = 0";
+                SQLiteCursor cursor = storage.getDatabase().queryFinalized(String.format(Locale.US,
+                        "SELECT data, mid, uid, date FROM messages_v2 WHERE %s AND mid IN (%s)", where, TextUtils.join(",", entry.getValue())));
+                while (cursor.next()) {
+                    NativeByteBuffer data = cursor.byteBufferValue(0);
+                    if (data == null) {
+                        continue;
+                    }
+                    TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                    if (message != null) {
+                        message.readAttachPath(data, UserConfig.getInstance(account).getClientUserId());
+                        message.id = cursor.intValue(1);
+                        message.dialog_id = cursor.longValue(2);
+                        message.date = cursor.intValue(3);
+                        found.put(channelId + ":" + message.id, message);
+                        MessagesStorage.addUsersAndChatsFromMessage(message, userIds, chatIds, null);
+                        if (message.dialog_id > 0 && !userIds.contains(message.dialog_id)) {
+                            userIds.add(message.dialog_id);
+                        } else if (message.dialog_id < 0 && !chatIds.contains(-message.dialog_id)) {
+                            chatIds.add(-message.dialog_id);
+                        }
+                    }
+                    data.reuse();
+                }
+                cursor.dispose();
+            }
+            if (!userIds.isEmpty()) {
+                storage.getUsersInternal(userIds, users);
+            }
+            if (!chatIds.isEmpty()) {
+                storage.getChatsInternal(TextUtils.join(",", chatIds), chats);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        AndroidUtilities.runOnUIThread(() -> {
+            MessagesController controller = MessagesController.getInstance(account);
+            controller.putUsers(users, true);
+            controller.putChats(chats, true);
+            ArrayList<TrashItem> items = new ArrayList<>();
+            for (long[] row : rows) {
+                TLRPC.Message message = found.get(row[0] + ":" + row[1]);
+                if (message != null) {
+                    items.add(new TrashItem(message.dialog_id, new MessageObject(account, message, false, true), (int) row[2]));
+                }
+            }
+            done.run(items);
+        });
     }
 
     private Set<Integer> set(long channelId) {

@@ -156,6 +156,7 @@ android {
         }
         buildConfigField "int", "BLOODY_APP_ID", bloodyAppId ?: "0"
         buildConfigField "String", "BLOODY_APP_HASH", "\"" + (bloodyAppHash ?: "") + "\""
+        buildConfigField "String", "BLOODY_VERSION", "\"" + BLOODY_VERSION_NAME + "\"" // compared with GitHub release tags by the updater
         // Bloodygram end
 
         externalNativeBuild {

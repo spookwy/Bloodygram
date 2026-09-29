@@ -730,9 +730,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         cameraReady = false;
         selectedCamera = null;
         if (!fromPaused) {
-            if (!useCamera2) {
-                isFrontface = true;
-            }
+            isFrontface = com.bloodygram.BloodyConfig.roundCameraStartsFront(); // Bloodygram: remembered/forced camera choice for round videos
             updateFlash();
             recordedTime = 0;
             progress = 0;
@@ -1140,6 +1138,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             }
         }
         isFrontface = !isFrontface;
+        com.bloodygram.BloodyConfig.setLastRoundCameraFront(isFrontface); // Bloodygram: remember for next round video
         updateFlash();
         if (useCamera2) {
             if (bothCameras) {

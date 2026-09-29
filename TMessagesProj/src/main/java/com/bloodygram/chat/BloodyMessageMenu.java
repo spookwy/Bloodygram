@@ -6,6 +6,7 @@ import com.anthropic.models.beta.messages.BetaOutputConfig;
 import com.bloodygram.BloodyStrings;
 import com.bloodygram.ai.BloodyAi;
 import com.bloodygram.history.BloodyEditHistory;
+import com.bloodygram.secret.BloodySecretKeeper;
 
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
@@ -36,6 +37,7 @@ public class BloodyMessageMenu {
             options.add(OPTION_AI_EXPLAIN);
             icons.add(R.drawable.msg_emoji_objects);
         }
+        BloodySecretKeeper.addMenuItem(message, items, options, icons);
     }
 
     public static void onOption(ChatActivity fragment, int option, MessageObject message) {
@@ -55,6 +57,8 @@ public class BloodyMessageMenu {
             });
         } else if (option == OPTION_AI_EXPLAIN) {
             explain(fragment, message);
+        } else if (option == BloodySecretKeeper.OPTION_BURN) {
+            BloodySecretKeeper.burn(fragment, message);
         }
     }
 

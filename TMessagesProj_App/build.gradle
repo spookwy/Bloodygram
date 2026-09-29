@@ -63,10 +63,23 @@ android {
         }
 
         release {
-            storeFile file("../TMessagesProj/config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
+            // Bloodygram: our own release key from local.properties (CI writes it from secrets); upstream's dummy key otherwise
+            def bloodyProps = new Properties()
+            def bloodyPropsFile = rootProject.file('local.properties')
+            if (bloodyPropsFile.exists()) {
+                bloodyPropsFile.withInputStream { bloodyProps.load(it) }
+            }
+            if (bloodyProps['BLOODY_KEYSTORE']) {
+                storeFile file(bloodyProps['BLOODY_KEYSTORE'])
+                storePassword bloodyProps['BLOODY_STORE_PASSWORD']
+                keyAlias bloodyProps['BLOODY_KEY_ALIAS']
+                keyPassword bloodyProps['BLOODY_KEY_PASSWORD']
+            } else {
+                storeFile file("../TMessagesProj/config/release.keystore")
+                storePassword RELEASE_STORE_PASSWORD
+                keyAlias RELEASE_KEY_ALIAS
+                keyPassword RELEASE_KEY_PASSWORD
+            }
         }
     }
 

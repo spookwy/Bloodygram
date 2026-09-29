@@ -9,6 +9,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
@@ -97,7 +98,16 @@ public class BloodyGhost {
     }
 
     private static void send(int account, TLObject req) {
+        send(account, req, null);
+    }
+
+    /** Sends a request that must go through even in ghost mode. */
+    public static void send(int account, TLObject req, RequestDelegate onDone) {
         allowed.add(req);
-        ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {});
+        ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
+            if (onDone != null) {
+                onDone.run(response, error);
+            }
+        });
     }
 }
