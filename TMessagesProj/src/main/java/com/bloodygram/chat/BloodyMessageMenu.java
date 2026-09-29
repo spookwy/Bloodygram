@@ -40,6 +40,28 @@ public class BloodyMessageMenu {
         com.bloodygram.ai.BloodyAiDigest.addMenuItem(message, items, options, icons);
         BloodySecretKeeper.addMenuItem(message, items, options, icons);
         BloodyRemind.addMenuItem(message, items, options, icons);
+        if (message.getDocument() != null && message.getDocumentName() != null && message.getDocumentName().toLowerCase(java.util.Locale.ROOT).endsWith(".js")) {
+            items.add(BloodyStrings.get(R.string.BloodyPluginsInstallFromChat));
+            options.add(OPTION_INSTALL_PLUGIN);
+            icons.add(R.drawable.msg_addbot);
+        }
+    }
+
+    public static final int OPTION_INSTALL_PLUGIN = 10014;
+
+    private static void installPlugin(ChatActivity fragment, MessageObject message) {
+        java.io.File file = org.telegram.messenger.FileLoader.getInstance(fragment.getCurrentAccount()).getPathToMessage(message.messageOwner);
+        if (file == null || !file.exists()) {
+            BulletinFactory.of(fragment).createErrorBulletin(BloodyStrings.get(R.string.BloodyPluginsDownloadFirst)).show();
+            return;
+        }
+        try {
+            String source = com.bloodygram.plugins.BloodyPlugins.read(new java.io.FileInputStream(file));
+            com.bloodygram.plugins.BloodyPluginsActivity.confirmInstall(fragment, message.getDocumentName(), source, null);
+        } catch (Exception e) {
+            org.telegram.messenger.FileLog.e(e);
+            BulletinFactory.of(fragment).createErrorBulletin(BloodyStrings.get(R.string.BloodyPluginsBadFile)).show();
+        }
     }
 
     public static void onOption(ChatActivity fragment, int option, MessageObject message) {
@@ -63,6 +85,8 @@ public class BloodyMessageMenu {
             BloodySecretKeeper.burn(fragment, message);
         } else if (option == BloodyRemind.OPTION_REMIND) {
             BloodyRemind.ask(fragment, message);
+        } else if (option == OPTION_INSTALL_PLUGIN) {
+            installPlugin(fragment, message);
         } else if (option == com.bloodygram.ai.BloodyAiDigest.OPTION_TRANSLATE) {
             com.bloodygram.ai.BloodyAiDigest.translate(fragment, message);
         }

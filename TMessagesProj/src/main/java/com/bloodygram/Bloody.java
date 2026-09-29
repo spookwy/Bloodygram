@@ -13,6 +13,7 @@ public class Bloody {
         BloodySecretSaver.start(account);
         BloodyStreakCelebration.start(account);
         com.bloodygram.chat.BloodyAutoDelete.start(account);
+        com.bloodygram.plugins.BloodyPlugins.start(account);
         if (!started) {
             started = true;
             BloodyStreakReminder.schedule();

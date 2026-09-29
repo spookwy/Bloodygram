@@ -16,6 +16,38 @@ Not affiliated with Telegram. Black and red.
 - Hidden chats behind a PIN, timed "delete for everyone", per-account themes, a year-in-review screen
 - Chat background effects (snow, ash, topographic map), smooth typing and cursor, spring animations
 
+### Plugins
+
+A plugin is one JavaScript file. Install it from Bloodygram settings → Plugins, or long press a `.js` file
+in any chat → "Install plugin". Plugins run in a sandbox: no Java or Android classes, no files, no network,
+and every call is cut off after 0.3 s.
+
+```js
+// @name My plugin
+// @description What it does
+// @version 1.0
+// @author you
+
+// "/shout hi" in any chat sends "HI!!!"; return nothing (or "") to send nothing
+bloody.command('shout', 'CAPS', function (args, chatId) {
+  return args.toUpperCase() + '!!!';
+});
+
+// change any outgoing text; return undefined to leave it as is
+bloody.onSend(function (text, chatId) {
+  return text.replace(/:fire:/g, '🔥');
+});
+
+// react to new messages: msg = {text, chatId, fromId, id, out}
+bloody.onMessage(function (msg) {
+  if (!msg.out && /urgent/i.test(msg.text)) bloody.toast('Urgent message!');
+});
+
+bloody.storage.set('count', '1');           // per-plugin strings
+var count = bloody.storage.get('count', '0');
+bloody.log('loaded, ' + bloody.version);
+```
+
 ### Download
 
 APKs are on the [Releases](../../releases) page. The app checks this page for updates itself.

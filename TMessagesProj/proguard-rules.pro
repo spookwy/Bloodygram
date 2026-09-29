@@ -54,3 +54,8 @@
 # Use -keep to explicitly keep any other classes shrinking would remove
 #-dontoptimize
 #-dontobfuscate
+# Bloodygram: Rhino (plugins) resolves its own classes reflectively; optional desktop-only bits are absent on Android
+-keep class org.mozilla.javascript.** { *; }
+-dontwarn org.mozilla.javascript.**
+-dontwarn javax.lang.model.**
+-dontwarn java.beans.**

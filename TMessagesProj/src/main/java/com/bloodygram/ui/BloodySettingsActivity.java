@@ -70,6 +70,7 @@ public class BloodySettingsActivity extends UniversalFragment {
     private static final int ID_STREAK_TOP = 41;
     private static final int ID_SMART_REPLIES = 42;
     private static final int ID_BLOODY_ICONS = 43;
+    private static final int ID_PLUGINS = 44;
 
     private static final String[] TRANSCRIBE_LANGS = {"", "ru-RU", "uk-UA", "en-US"};
 
@@ -117,6 +118,7 @@ public class BloodySettingsActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_TRANSCRIBE_LANG, BloodyStrings.get(R.string.BloodyTranscribeLang), transcribeLangName(BloodyConfig.prefs().getString("transcribeLang", ""))));
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyAiInfo)));
 
+        items.add(UItem.asButton(ID_PLUGINS, R.drawable.msg_bots, BloodyStrings.get(R.string.BloodyPlugins)));
         items.add(UItem.asButton(ID_WRAPPED, R.drawable.msg_stats, BloodyStrings.get(R.string.BloodyWrapped)).accent());
         items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyWrappedInfo)));
 
@@ -394,6 +396,8 @@ public class BloodySettingsActivity extends UniversalFragment {
         } else if (item.id == ID_STREAK_CELEBRATION) {
             BloodyConfig.putBoolean("streakCelebration", BloodyConfig.streakCelebration = !BloodyConfig.streakCelebration);
             listView.adapter.update(true);
+        } else if (item.id == ID_PLUGINS) {
+            presentFragment(new com.bloodygram.plugins.BloodyPluginsActivity());
         } else if (item.id == ID_BLOODY_ICONS) {
             BloodyConfig.putBoolean("bloodyIcons", BloodyConfig.bloodyIcons = !BloodyConfig.bloodyIcons);
             listView.adapter.update(true);

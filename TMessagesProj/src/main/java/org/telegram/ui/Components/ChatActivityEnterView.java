@@ -7411,7 +7411,14 @@ public class ChatActivityEnterView extends FrameLayout implements
                 sendRichDraft(notify, scheduleDate, scheduleRepeatPeriod, payStars);
                 return;
             }
-            CharSequence message = messageEditText == null ? "" : messageEditText.getTextToUse();
+            CharSequence typedMessage = messageEditText == null ? "" : messageEditText.getTextToUse(); // Bloodygram: plugins may rewrite it
+            CharSequence message = com.bloodygram.plugins.BloodyPlugins.onSend(currentAccount, dialog_id, typedMessage);
+            if (message == null) { // a plugin command handled it, nothing to send
+                if (messageEditText != null) {
+                    messageEditText.setText("");
+                }
+                return;
+            }
             if (parentFragment != null) {
                 TLRPC.Chat chat = parentFragment.getCurrentChat();
                 if (chat != null && chat.slowmode_enabled && !ChatObject.hasAdminRights(chat)) {

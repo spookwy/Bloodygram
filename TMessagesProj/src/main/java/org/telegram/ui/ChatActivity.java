@@ -33800,6 +33800,7 @@ public class ChatActivity extends BaseFragment implements
             case com.bloodygram.secret.BloodySecretKeeper.OPTION_BURN:
             case com.bloodygram.chat.BloodyRemind.OPTION_REMIND:
             case com.bloodygram.ai.BloodyAiDigest.OPTION_TRANSLATE:
+            case com.bloodygram.chat.BloodyMessageMenu.OPTION_INSTALL_PLUGIN:
             case com.bloodygram.chat.BloodyMessageMenu.OPTION_AI_EXPLAIN: {
                 com.bloodygram.chat.BloodyMessageMenu.onOption(this, option, selectedObject);
                 break;
