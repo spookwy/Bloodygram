@@ -26,6 +26,7 @@ public class BloodyChatMenu {
         if (com.bloodygram.ai.BloodyAi.hasKey()) {
             menu.lazilyAddSubItem(com.bloodygram.ai.BloodyAiChat.MENU_SUMMARY, R.drawable.msg_emoji_objects, BloodyStrings.get(R.string.BloodyAiSummary));
             menu.lazilyAddSubItem(com.bloodygram.ai.BloodyAiChat.MENU_REPLIES, R.drawable.msg_emoji_objects, BloodyStrings.get(R.string.BloodyAiReplies));
+            menu.lazilyAddSubItem(com.bloodygram.ai.BloodyAiChat.MENU_TRANSLATE, R.drawable.msg_translate, BloodyStrings.get(R.string.BloodyAiTranslateChat));
         }
         lastMenu = new java.lang.ref.WeakReference<>(menu);
         hideItem = menu.lazilyAddSubItem(BloodyVault.MENU_HIDE, R.drawable.msg_archive_hide, hideText(account, dialogId));
@@ -76,6 +77,10 @@ public class BloodyChatMenu {
         }
         if (id == com.bloodygram.ai.BloodyAiChat.MENU_REPLIES) {
             com.bloodygram.ai.BloodyAiChat.suggestReplies(fragment);
+            return true;
+        }
+        if (id == com.bloodygram.ai.BloodyAiChat.MENU_TRANSLATE) {
+            com.bloodygram.ai.BloodyAiChat.translateChat(fragment);
             return true;
         }
         if (id == BloodyVault.MENU_HIDE) {

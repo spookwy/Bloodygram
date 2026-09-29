@@ -104,6 +104,10 @@
     <string name="BloodyAiDigest">✨ Channels digest</string>
     <string name="BloodyAiDigestNothing">No unread posts in channels</string>
     <string name="BloodyAiTranslate">✨ Translate</string>
+    <string name="BloodyAiTranslateChat">✨ Translate chat</string>
+    <string name="BloodyStatsReplyMe">You reply in</string>
+    <string name="BloodyStatsReplyThem">%1$s replies in</string>
+    <string name="BloodyStatsActiveHour">Most active time</string>
     <string name="BloodyStreakFreeze">Freeze: one missed day a week is forgiven</string>
     <string name="BloodyStreakTop">My streaks</string>
     <string name="BloodyStreakTopSubtitle">%1$d streaks</string>

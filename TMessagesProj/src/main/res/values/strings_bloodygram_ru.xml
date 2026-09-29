@@ -102,6 +102,10 @@
     <string name="BloodyAiDigest_ru">✨ Дайджест каналов</string>
     <string name="BloodyAiDigestNothing_ru">В каналах нет непрочитанного</string>
     <string name="BloodyAiTranslate_ru">✨ Перевести</string>
+    <string name="BloodyAiTranslateChat_ru">✨ Перевести чат</string>
+    <string name="BloodyStatsReplyMe_ru">Ты отвечаешь за</string>
+    <string name="BloodyStatsReplyThem_ru">%1$s отвечает за</string>
+    <string name="BloodyStatsActiveHour_ru">Самое активное время</string>
     <string name="BloodyStreakFreeze_ru">Заморозка: один пропуск в неделю прощается</string>
     <string name="BloodyStreakTop_ru">Мои огоньки</string>
     <string name="BloodyStreakTopSubtitle_ru">Огоньков: %1$d</string>

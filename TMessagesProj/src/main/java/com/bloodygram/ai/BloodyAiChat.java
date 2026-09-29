@@ -24,6 +24,7 @@ public class BloodyAiChat {
 
     public static final int MENU_SUMMARY = 10008;
     public static final int MENU_REPLIES = 10009;
+    public static final int MENU_TRANSLATE = 10013;
 
     private static final int MAX_MESSAGES = 150;
 
@@ -100,6 +101,40 @@ public class BloodyAiChat {
                                     fragment.getChatActivityEnterView().openKeyboard();
                                 }
                             })
+                            .show();
+                });
+    }
+
+    /** The latest messages translated into the app language, in the same "time name: text" layout. */
+    public static void translateChat(ChatActivity fragment) {
+        if (fragment.getParentActivity() == null) {
+            return;
+        }
+        String transcript = transcript(fragment, 40);
+        if (transcript.isEmpty()) {
+            BulletinFactory.of(fragment).createErrorBulletin(BloodyStrings.get(R.string.BloodyAiNothing)).show();
+            return;
+        }
+        String language = org.telegram.messenger.LocaleController.getInstance().getCurrentLocaleInfo() != null
+                ? org.telegram.messenger.LocaleController.getInstance().getCurrentLocaleInfo().name : "Russian";
+        AlertDialog progress = new AlertDialog(fragment.getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
+        progress.show();
+        BloodyAi.ask("Below are the latest messages of a chat, oldest first, as \"time name: text\". "
+                        + "Translate every message into " + language + ", keeping the \"time name:\" prefix, the order, the tone and the emoji. "
+                        + "Messages already in " + language + " stay as they are. Output only the translated lines.",
+                transcript, BetaOutputConfig.Effort.LOW, (answer, error) -> {
+                    progress.dismiss();
+                    if (fragment.getParentActivity() == null) {
+                        return;
+                    }
+                    if (answer == null) {
+                        BulletinFactory.of(fragment).createErrorBulletin(error).show();
+                        return;
+                    }
+                    new AlertDialog.Builder(fragment.getParentActivity())
+                            .setTitle(BloodyStrings.get(R.string.BloodyAiTranslateChat))
+                            .setMessage(answer)
+                            .setPositiveButton(BloodyStrings.get(R.string.BloodyClose), null)
                             .show();
                 });
     }

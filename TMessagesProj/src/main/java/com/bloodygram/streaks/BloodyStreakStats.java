@@ -23,6 +23,9 @@ public class BloodyStreakStats {
     private static final int INITIATIVE_WINDOW = 30 * 60;
     private static final int MAX_REQUESTS = 600;
     private static final int CRAWL_DELAY = 300;
+    private static final int REPLY_MAX_GAP = 12 * 60 * 60;
+
+    private final java.util.Calendar calendar = java.util.Calendar.getInstance();
 
     public static class Result {
         public BloodyStreaks.Stats stats;
@@ -158,6 +161,21 @@ public class BloodyStreakStats {
             } else {
                 s.ct++;
             }
+            // reply speed: a message answering the other side's last message, gaps over 12 h (sleep, days off) ignored
+            int side = m.out ? 1 : 0;
+            if (s.po != -1 && s.po != side && m.date - s.pd > 0 && m.date - s.pd < REPLY_MAX_GAP) {
+                if (m.out) {
+                    s.rsMe += m.date - s.pd;
+                    s.rcMe++;
+                } else {
+                    s.rsTh += m.date - s.pd;
+                    s.rcTh++;
+                }
+            }
+            s.po = side;
+            s.pd = m.date;
+            calendar.setTimeInMillis(m.date * 1000L);
+            s.hours[calendar.get(java.util.Calendar.HOUR_OF_DAY)]++;
             // a point goes to whoever wrote first after the 30-minute timer since the previous point
             if (s.lp == 0 || m.date - s.lp >= INITIATIVE_WINDOW) {
                 if (m.out) {

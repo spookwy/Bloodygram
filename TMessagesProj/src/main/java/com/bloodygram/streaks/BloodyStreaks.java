@@ -114,11 +114,40 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
         public int ct;      // messages from them
         public int first;   // date of the first message
         public int deleted; // deleted messages seen since tracking start
+        // Bloodygram additions (not in the plugin)
+        public long rsMe, rsTh; // summed reply delays, seconds (mine / theirs)
+        public int rcMe, rcTh;  // number of replies counted
+        public int pd;          // date of the previous counted message
+        public int po = -1;     // previous message was mine: 1, theirs: 0, none: -1
+        public int[] hours = new int[24]; // messages by local hour
 
         Stats copy() {
             Stats s = new Stats();
             s.mx = mx; s.lp = lp; s.me = me; s.th = th; s.cm = cm; s.ct = ct; s.first = first; s.deleted = deleted;
+            s.rsMe = rsMe; s.rsTh = rsTh; s.rcMe = rcMe; s.rcTh = rcTh; s.pd = pd; s.po = po; s.hours = hours.clone();
             return s;
+        }
+
+        static String packHours(int[] hours) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 24; i++) {
+                if (i > 0) {
+                    sb.append(',');
+                }
+                sb.append(hours[i]);
+            }
+            return sb.toString();
+        }
+
+        static int[] unpackHours(String s) {
+            int[] hours = new int[24];
+            if (s != null) {
+                String[] parts = s.split(",");
+                for (int i = 0; i < Math.min(24, parts.length); i++) {
+                    hours[i] = Utilities.parseInt(parts[i]);
+                }
+            }
+            return hours;
         }
     }
 
@@ -439,6 +468,13 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
             values.put("ct", s.ct);
             values.put("first", s.first);
             values.put("deleted", s.deleted);
+            values.put("rs_me", s.rsMe);
+            values.put("rs_th", s.rsTh);
+            values.put("rc_me", s.rcMe);
+            values.put("rc_th", s.rcTh);
+            values.put("pd", s.pd);
+            values.put("po", s.po);
+            values.put("hours", Stats.packHours(s.hours));
             db().getWritableDatabase().insertWithOnConflict("streak_stats", null, values, SQLiteDatabase.CONFLICT_REPLACE);
         } catch (Exception e) {
             FileLog.e(e);
@@ -906,7 +942,7 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
         } catch (Exception e) {
             FileLog.e(e);
         }
-        try (Cursor cursor = database.rawQuery("SELECT dialog_id, mx, lp, me, th, cm, ct, first, deleted FROM streak_stats", null)) {
+        try (Cursor cursor = database.rawQuery("SELECT dialog_id, mx, lp, me, th, cm, ct, first, deleted, rs_me, rs_th, rc_me, rc_th, pd, po, hours FROM streak_stats", null)) {
             while (cursor.moveToNext()) {
                 Stats s = new Stats();
                 s.mx = cursor.getInt(1);
@@ -917,6 +953,13 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
                 s.ct = cursor.getInt(6);
                 s.first = cursor.getInt(7);
                 s.deleted = cursor.getInt(8);
+                s.rsMe = cursor.getLong(9);
+                s.rsTh = cursor.getLong(10);
+                s.rcMe = cursor.getInt(11);
+                s.rcTh = cursor.getInt(12);
+                s.pd = cursor.getInt(13);
+                s.po = cursor.getInt(14);
+                s.hours = Stats.unpackHours(cursor.getString(15));
                 stats.put(cursor.getLong(0), s);
             }
         } catch (Exception e) {
@@ -968,14 +1011,14 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
     private static class DbHelper extends SQLiteOpenHelper {
 
         DbHelper(String name) {
-            super(ApplicationLoader.applicationContext, name, null, 3);
+            super(ApplicationLoader.applicationContext, name, null, 4);
         }
 
         @Override
         public void onCreate(SQLiteDatabase db) {
             db.execSQL("CREATE TABLE streak_days (dialog_id INTEGER NOT NULL, day INTEGER NOT NULL, flags INTEGER NOT NULL, PRIMARY KEY (dialog_id, day))");
             db.execSQL("CREATE TABLE streak_sync (dialog_id INTEGER PRIMARY KEY, synced_day INTEGER NOT NULL)");
-            onUpgrade(db, 1, 3);
+            onUpgrade(db, 1, 4);
         }
 
         @Override
@@ -986,6 +1029,15 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
             if (oldVersion < 3) {
                 // v2 scans stopped after 4000 messages: recount everything with day-skipping scans
                 db.execSQL("DELETE FROM streak_sync");
+            }
+            if (oldVersion < 4) {
+                // reply speed and active hours: the crawl starts over to fill them, the live "deleted" counter is kept
+                for (String column : new String[]{"rs_me", "rs_th", "rc_me", "rc_th", "pd"}) {
+                    db.execSQL("ALTER TABLE streak_stats ADD COLUMN " + column + " INTEGER NOT NULL DEFAULT 0");
+                }
+                db.execSQL("ALTER TABLE streak_stats ADD COLUMN po INTEGER NOT NULL DEFAULT -1");
+                db.execSQL("ALTER TABLE streak_stats ADD COLUMN hours TEXT");
+                db.execSQL("UPDATE streak_stats SET mx = 0, lp = 0, me = 0, th = 0, cm = 0, ct = 0, first = 0");
             }
         }
     }

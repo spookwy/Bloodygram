@@ -289,6 +289,26 @@ public class BloodyStreakUi {
             mine = row(context, BloodyStrings.get(R.string.BloodyStatsMine));
             theirs = row(context, BloodyStrings.format(R.string.BloodyStatsTheirs, name));
             deleted = row(context, BloodyStrings.get(R.string.BloodyStatsDeleted));
+            replyMe = row(context, BloodyStrings.get(R.string.BloodyStatsReplyMe));
+            replyThem = row(context, BloodyStrings.format(R.string.BloodyStatsReplyThem, name));
+            activeHour = row(context, BloodyStrings.get(R.string.BloodyStatsActiveHour));
+        }
+
+        private TextView replyMe, replyThem, activeHour;
+
+        /** "4 min", "1 h 20 min", "35 s". */
+        private String duration(long seconds) {
+            boolean ru = BloodyStrings.isRussian();
+            if (seconds < 60) {
+                return seconds + (ru ? " сек" : " s");
+            }
+            long minutes = seconds / 60;
+            if (minutes < 60) {
+                return minutes + (ru ? " мин" : " min");
+            }
+            long hours = minutes / 60;
+            long rest = minutes % 60;
+            return hours + (ru ? " ч" : " h") + (rest > 0 ? " " + rest + (ru ? " мин" : " min") : "");
         }
 
         void fill(BloodyStreaks streaks, long dialogId, BloodyStreakStats.Result data) {
@@ -373,6 +393,15 @@ public class BloodyStreakUi {
             BloodyConfig.load();
             String since = new SimpleDateFormat("dd.MM", Locale.US).format(new Date(BloodyConfig.deletedSince * 1000L));
             deleted.setText(BloodyStrings.formatNumber(s.deleted) + " (" + (BloodyStrings.isRussian() ? "с " : "since ") + since + ")");
+            replyMe.setText(s.rcMe > 0 ? duration(s.rsMe / s.rcMe) : "—");
+            replyThem.setText(s.rcTh > 0 ? duration(s.rsTh / s.rcTh) : "—");
+            int best = -1;
+            for (int h = 0; h < 24; h++) {
+                if (s.hours[h] > 0 && (best < 0 || s.hours[h] > s.hours[best])) {
+                    best = h;
+                }
+            }
+            activeHour.setText(best < 0 ? "—" : String.format(Locale.US, "%02d:00–%02d:00", best, (best + 1) % 24));
         }
 
         /** "🏅 7 · 30 · 50 · 100 · ◦200 · ◦300": reached milestones and the next ones. */
