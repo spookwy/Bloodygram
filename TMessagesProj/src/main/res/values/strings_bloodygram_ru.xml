@@ -99,6 +99,7 @@
     <string name="BloodyLockDone_ru">Чат закрыт PIN-кодом</string>
     <string name="BloodyUnlockDone_ru">PIN с чата снят</string>
     <string name="BloodyPrivacySection_ru">Приватность</string>
+    <string name="BloodyStreakFreeze_ru">Заморозка: один пропуск в неделю прощается</string>
     <string name="BloodyRemind_ru">Напомнить</string>
     <string name="BloodyRemind30m_ru">Через 30 минут</string>
     <string name="BloodyRemind1h_ru">Через час</string>

@@ -62,7 +62,7 @@ public class BloodyAi {
         String model = provider.model();
         if (provider != BloodyAiProvider.CLAUDE) {
             Utilities.globalQueue.postRunnable(() -> {
-                String[] result = provider.complete(key, model, SYSTEM + "\n\n" + task, content);
+                String[] result = provider.ask(key, SYSTEM + "\n\n" + task, content);
                 AndroidUtilities.runOnUIThread(() -> done.run(result[0], result[1]));
             });
             return;

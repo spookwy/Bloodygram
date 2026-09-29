@@ -101,6 +101,7 @@
     <string name="BloodyLockDone">Chat is locked</string>
     <string name="BloodyUnlockDone">Chat is unlocked</string>
     <string name="BloodyPrivacySection">Privacy</string>
+    <string name="BloodyStreakFreeze">Freeze: one missed day a week is forgiven</string>
     <string name="BloodyRemind">Remind me</string>
     <string name="BloodyRemind30m">In 30 minutes</string>
     <string name="BloodyRemind1h">In an hour</string>

@@ -66,6 +66,7 @@ public class BloodySettingsActivity extends UniversalFragment {
     private static final int ID_TRASH = 37;
     private static final int ID_AI_PROVIDER = 38;
     private static final int ID_UPDATE = 39;
+    private static final int ID_STREAK_FREEZE = 40;
 
     private static final String[] TRANSCRIBE_LANGS = {"", "ru-RU", "uk-UA", "en-US"};
 
@@ -223,6 +224,7 @@ public class BloodySettingsActivity extends UniversalFragment {
                     com.bloodygram.streaks.BloodyStreakReminder.schedule();
                 }));
             }
+            items.add(UItem.asCheck(ID_STREAK_FREEZE, BloodyStrings.get(R.string.BloodyStreakFreeze)).setChecked(BloodyConfig.streakFreeze));
             items.add(UItem.asCheck(ID_STREAK_CELEBRATION, BloodyStrings.get(R.string.BloodyStreakCelebration)).setChecked(BloodyConfig.streakCelebration));
             items.add(UItem.asShadow(BloodyStrings.get(R.string.BloodyStreakCelebrationInfo)));
             items.add(UItem.asButton(ID_STREAK_RECALC, BloodyStrings.get(R.string.BloodyStreakRecalc)).accent());
@@ -317,23 +319,22 @@ public class BloodySettingsActivity extends UniversalFragment {
             });
         } else if (item.id == ID_AI_MODEL) {
             BloodyAiProvider provider = BloodyAiProvider.current();
-            String[] names = new String[provider.models.length + 1];
-            System.arraycopy(provider.models, 0, names, 0, provider.models.length);
-            names[names.length - 1] = BloodyStrings.get(R.string.BloodyAiModelCustom);
-            new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
-                    .setTitle(BloodyStrings.get(R.string.BloodyAiModel))
-                    .setItems(names, (d, which) -> {
-                        if (which < provider.models.length) {
-                            provider.setModel(provider.models[which]);
-                            listView.adapter.update(true);
-                        } else {
-                            askText(BloodyStrings.get(R.string.BloodyAiModel), null, provider.model(), value -> {
-                                provider.setModel(value);
-                                listView.adapter.update(true);
-                            });
-                        }
-                    })
-                    .show();
+            String key = provider.key();
+            if (provider == BloodyAiProvider.CLAUDE || key.isEmpty()) {
+                showModels(provider, java.util.Arrays.asList(provider.models));
+                return;
+            }
+            org.telegram.ui.ActionBar.AlertDialog progress = new org.telegram.ui.ActionBar.AlertDialog(getParentActivity(), org.telegram.ui.ActionBar.AlertDialog.ALERT_TYPE_SPINNER);
+            progress.show();
+            org.telegram.messenger.Utilities.globalQueue.postRunnable(() -> {
+                java.util.ArrayList<String> live = provider.fetchModels(key);
+                org.telegram.messenger.AndroidUtilities.runOnUIThread(() -> {
+                    progress.dismiss();
+                    if (getParentActivity() != null) {
+                        showModels(provider, live.isEmpty() ? java.util.Arrays.asList(provider.models) : live);
+                    }
+                });
+            });
         } else if (item.id == ID_TRANSCRIBE_LANG) {
             String[] names = new String[TRANSCRIBE_LANGS.length];
             for (int i = 0; i < names.length; i++) {
@@ -387,6 +388,11 @@ public class BloodySettingsActivity extends UniversalFragment {
         } else if (item.id == ID_STREAK_CELEBRATION) {
             BloodyConfig.putBoolean("streakCelebration", BloodyConfig.streakCelebration = !BloodyConfig.streakCelebration);
             listView.adapter.update(true);
+        } else if (item.id == ID_STREAK_FREEZE) {
+            BloodyConfig.putBoolean("streakFreeze", BloodyConfig.streakFreeze = !BloodyConfig.streakFreeze);
+            BloodyStreaks.getInstance(currentAccount).recalcAll(); // with the freeze the scan has to look past single gaps
+            listView.adapter.update(true);
+            refreshDialogs();
         } else if (item.id == ID_UPDATE) {
             com.bloodygram.update.BloodyUpdater.checkNow(this);
         } else if (item.id == ID_TRASH) {
@@ -409,6 +415,28 @@ public class BloodySettingsActivity extends UniversalFragment {
             BloodyStreaks.getInstance(currentAccount).recalcAll();
             BulletinFactory.of(this).createSimpleBulletin(R.raw.info, BloodyStrings.get(R.string.BloodyStreakRecalcDone)).show();
         }
+    }
+
+    private void showModels(BloodyAiProvider provider, java.util.List<String> models) {
+        String[] names = new String[models.size() + 1];
+        for (int i = 0; i < models.size(); i++) {
+            names[i] = models.get(i);
+        }
+        names[names.length - 1] = BloodyStrings.get(R.string.BloodyAiModelCustom);
+        new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity())
+                .setTitle(BloodyStrings.get(R.string.BloodyAiModel))
+                .setItems(names, (d, which) -> {
+                    if (which < models.size()) {
+                        provider.setModel(models.get(which));
+                        listView.adapter.update(true);
+                    } else {
+                        askText(BloodyStrings.get(R.string.BloodyAiModel), null, provider.model(), value -> {
+                            provider.setModel(value);
+                            listView.adapter.update(true);
+                        });
+                    }
+                })
+                .show();
     }
 
     private void askText(String title, String message, String value, org.telegram.messenger.Utilities.Callback<String> onSave) {

@@ -85,11 +85,23 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
     private static class Streak {
         final int lastBothDay;
         final int length;
+        /** Most recent day skipped thanks to the freeze, NO_FREEZE if none. */
+        final int lastFreeze;
 
-        Streak(int lastBothDay, int length) {
+        Streak(int lastBothDay, int length, int lastFreeze) {
             this.lastBothDay = lastBothDay;
             this.length = length;
+            this.lastFreeze = lastFreeze;
         }
+    }
+
+    /** Freeze (setting): one missed day per this many days doesn't break the streak. */
+    private static final int FREEZE_WINDOW = 7;
+    private static final int NO_FREEZE = Integer.MAX_VALUE / 2;
+
+    private static boolean canFreeze(int day, int lastFreeze) {
+        BloodyConfig.load();
+        return BloodyConfig.streakFreeze && lastFreeze - day >= FREEZE_WINDOW;
     }
 
     /** Persistent per-chat statistics (same fields as the plugin's stats cache). */
@@ -176,13 +188,27 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
         if (streak == null) {
             return 0;
         }
-        return streak.lastBothDay >= today() - 1 ? streak.length : 0;
+        return isAlive(streak) ? streak.length : 0;
     }
 
-    /** Alive only thanks to yesterday: write today or it goes out at midnight. */
+    private static boolean isAlive(Streak streak) {
+        int today = today();
+        // yesterday missed but frozen: still alive today
+        return streak.lastBothDay >= today - 1 || streak.lastBothDay == today - 2 && canFreeze(today - 1, streak.lastFreeze);
+    }
+
+    /** Goes out at midnight unless both write today (a freeze that would cover today means it's safe). */
     public boolean isAtRisk(long dialogId) {
         Streak streak = streaks.get(dialogId);
-        return streak != null && streak.lastBothDay == today() - 1;
+        return streak != null && isAtRisk(streak);
+    }
+
+    private static boolean isAtRisk(Streak streak) {
+        int today = today();
+        if (streak.lastBothDay == today - 1) {
+            return !canFreeze(today, streak.lastFreeze);
+        }
+        return streak.lastBothDay == today - 2 && canFreeze(today - 1, streak.lastFreeze); // yesterday already frozen
     }
 
     /** Whether the streak for this chat has been counted today. */
@@ -255,11 +281,10 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
     public void collectAtRisk(Utilities.Callback<ArrayList<long[]>> callback) {
         queue.postRunnable(() -> {
             ArrayList<long[]> result = new ArrayList<>();
-            int yesterday = today() - 1;
             BloodyConfig.load();
             for (Map.Entry<Long, Streak> entry : streaks.entrySet()) {
                 Streak s = entry.getValue();
-                if (s.lastBothDay == yesterday && s.length >= Math.max(1, BloodyConfig.streakMinDays)) {
+                if (isAtRisk(s) && s.length >= Math.max(1, BloodyConfig.streakMinDays)) {
                     result.add(new long[]{entry.getKey(), s.length});
                 }
             }
@@ -579,6 +604,7 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
         int gen;
         int today;
         int day;        // day being checked
+        int lastFreeze = NO_FREEZE; // last missed day stepped over thanks to the freeze
         int requests;
         Runnable done;
         /** Days whose messages were all seen. */
@@ -617,6 +643,12 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
                 return false;
             }
             if (both) {
+                scan.day--;
+                continue;
+            }
+            if (complete && canFreeze(scan.day, scan.lastFreeze)) {
+                // maybe covered by the freeze: keep going, recompute() accepts it only if the day before counts
+                scan.lastFreeze = scan.day;
                 scan.day--;
                 continue;
             }
@@ -815,14 +847,17 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
             return;
         }
         int length = 0;
+        int lastFreeze = NO_FREEZE;
         for (int day = lastBoth; ; day--) {
-            Integer flags = map.get(day);
-            if (flags == null || (flags & FLAG_BOTH) != FLAG_BOTH) {
+            if (isBoth(map, day)) {
+                length++;
+            } else if (canFreeze(day, lastFreeze) && isBoth(map, day - 1)) {
+                lastFreeze = day; // a single missed day covered by the freeze: skipped, not counted
+            } else {
                 break;
             }
-            length++;
         }
-        streaks.put(dialogId, new Streak(lastBoth, length));
+        streaks.put(dialogId, new Streak(lastBoth, length, lastFreeze));
     }
 
     private void saveSynced(long dialogId, int day) {

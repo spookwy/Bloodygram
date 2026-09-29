@@ -105,13 +105,52 @@ public class BloodyAiProvider {
         return name + " · " + BloodyStrings.get(free ? R.string.BloodyAiFree : R.string.BloodyAiPaid);
     }
 
-    /** Blocking OpenAI-compatible request. @return {text, null} or {null, error for the user} */
+    /**
+     * Blocking request; if the model is gone (404) picks a live one from /models, remembers it and retries once.
+     * @return {text, null} or {null, error for the user}
+     */
+    String[] ask(String key, String system, String content) {
+        String model = model();
+        String[] result = complete(key, model, system, content);
+        if (result.length > 2 && "404".equals(result[2])) {
+            String replacement = pickModel(fetchModels(key));
+            if (replacement != null && !replacement.equals(model)) {
+                setModel(replacement);
+                result = complete(key, replacement, system, content);
+            }
+        }
+        return result;
+    }
+
+    /** A sensible default among the live models: a stable "flash" for Gemini, DeepSeek on OpenRouter, the 70B Llama on Groq. */
+    private String pickModel(java.util.List<String> models) {
+        if (models.isEmpty()) {
+            return null;
+        }
+        String preferred = "gemini".equals(id) ? "flash" : "openrouter".equals(id) ? "deepseek" : "groq".equals(id) ? "70b" : "";
+        String best = null;
+        for (String m : models) { // lists are sorted, so the last match is usually the newest
+            if (m.contains(preferred) && !m.contains("lite") && !m.contains("preview") && !m.contains("exp")) {
+                best = m;
+            }
+        }
+        if (best == null) {
+            for (String m : models) {
+                if (m.contains(preferred)) {
+                    best = m;
+                }
+            }
+        }
+        return best != null ? best : models.get(0);
+    }
+
+    /** One OpenAI-compatible request. @return {text, null} or {null, error for the user[, http code]} */
     String[] complete(String key, String model, String system, String content) {
         HttpURLConnection connection = null;
         try {
             JSONObject body = new JSONObject();
             body.put("model", model);
-            body.put("max_tokens", 4000);
+            body.put("max_tokens", 16000); // thinking models (Gemini 2.5+, R1) spend part of it before answering
             JSONArray messages = new JSONArray();
             messages.put(new JSONObject().put("role", "system").put("content", system));
             messages.put(new JSONObject().put("role", "user").put("content", content));
@@ -136,8 +175,10 @@ public class BloodyAiProvider {
                 return new String[]{null, BloodyStrings.get(R.string.BloodyAiRateLimit)};
             }
             if (code / 100 != 2) {
-                FileLog.e("AI " + id + " HTTP " + code + ": " + read(connection.getErrorStream()));
-                return new String[]{null, BloodyStrings.format(R.string.BloodyAiError, String.valueOf(code))};
+                String errorBody = read(connection.getErrorStream());
+                FileLog.e("AI " + id + " HTTP " + code + ": " + errorBody);
+                String detail = errorMessage(errorBody);
+                return new String[]{null, BloodyStrings.format(R.string.BloodyAiError, code + (detail.isEmpty() ? "" : ": " + detail)), String.valueOf(code)};
             }
             JSONObject response = new JSONObject(read(connection.getInputStream()));
             String text = response.getJSONArray("choices").getJSONObject(0).getJSONObject("message").optString("content", "");
@@ -154,6 +195,57 @@ public class BloodyAiProvider {
                 connection.disconnect();
             }
         }
+    }
+
+    /** error.message from an OpenAI-style error body (Gemini wraps it in an array), shortened for a bulletin. */
+    private static String errorMessage(String body) {
+        try {
+            String trimmed = body.trim();
+            JSONObject root = trimmed.startsWith("[") ? new JSONArray(trimmed).getJSONObject(0) : new JSONObject(trimmed);
+            String message = root.optJSONObject("error") != null ? root.getJSONObject("error").optString("message", "") : root.optString("message", "");
+            return message.length() > 160 ? message.substring(0, 160) + "…" : message;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Models this key can use, from the provider's OpenAI-compatible /models list (names change often, so the
+     * picker asks instead of trusting the built-in list). OpenRouter is narrowed to its free models.
+     */
+    public java.util.ArrayList<String> fetchModels(String key) {
+        java.util.ArrayList<String> result = new java.util.ArrayList<>();
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL(url.replace("chat/completions", "models")).openConnection();
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(30000);
+            connection.setRequestProperty("Authorization", "Bearer " + key);
+            if (connection.getResponseCode() / 100 != 2) {
+                FileLog.e("AI " + id + " models HTTP " + connection.getResponseCode() + ": " + read(connection.getErrorStream()));
+                return result;
+            }
+            JSONArray data = new JSONObject(read(connection.getInputStream())).optJSONArray("data");
+            for (int i = 0; data != null && i < data.length(); i++) {
+                String model = data.getJSONObject(i).optString("id", "");
+                if (model.startsWith("models/")) {
+                    model = model.substring("models/".length()); // Gemini lists "models/gemini-..."
+                }
+                if (model.isEmpty() || "openrouter".equals(id) && !model.endsWith(":free")
+                        || "gemini".equals(id) && (!model.startsWith("gemini") || model.contains("embedding") || model.contains("tts") || model.contains("image"))) {
+                    continue;
+                }
+                result.add(model);
+            }
+            java.util.Collections.sort(result);
+        } catch (Exception e) {
+            FileLog.e(e);
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+        return result;
     }
 
     private static String read(InputStream in) throws Exception {
