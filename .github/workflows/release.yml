@@ -64,7 +64,17 @@ jobs:
             echo "BLOODY_KEY_PASSWORD=$BLOODY_KEY_PASSWORD"
           } > local.properties
 
+      # compiled C/C++ objects are reused between releases; ccache keys on file contents, so a fresh checkout still hits
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: native-release
+          max-size: 3G
+
       - name: Build
+        env:
+          BLOODY_CCACHE: ccache
+          CCACHE_BASEDIR: ${{ github.workspace }}
+          CCACHE_COMPILERCHECK: content
         run: |
           chmod +x gradlew
           ./gradlew :TMessagesProj_App:assembleAfatRelease --no-daemon --stacktrace
@@ -96,25 +106,6 @@ jobs:
         with:
           files: ${{ steps.apk.outputs.file }}
           body_path: notes.txt
-
-      # Telegram channel post; set TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL (@name or -100… id, the bot must be an admin) to enable
-      - name: Announce in Telegram
-        if: startsWith(github.ref, 'refs/tags/') && env.TG_TOKEN != ''
-        env:
-          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TG_CHAT: ${{ secrets.TELEGRAM_CHANNEL }}
-        run: |
-          {
-            echo "🩸 Bloodygram ${{ steps.apk.outputs.version }}"
-            echo
-            cat notes.txt
-            echo
-            echo "⬇️ https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${{ steps.apk.outputs.file }}"
-          } > post.txt
-          curl -sS -f "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
-            --data-urlencode "chat_id=$TG_CHAT" \
-            --data-urlencode "text@post.txt" \
-            --data-urlencode "disable_web_page_preview=true" > /dev/null
 
       - uses: actions/upload-artifact@v4
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}

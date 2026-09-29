@@ -164,6 +164,9 @@ android {
             cmake {
                 version '3.22.1'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+                if (System.getenv('BLOODY_CCACHE')) { // Bloodygram: compiler cache on CI, the native build is most of the release time
+                    arguments "-DCMAKE_C_COMPILER_LAUNCHER=${System.getenv('BLOODY_CCACHE')}", "-DCMAKE_CXX_COMPILER_LAUNCHER=${System.getenv('BLOODY_CCACHE')}"
+                }
                 targets 'tmessages.49'
             }
         }
