@@ -101,6 +101,14 @@
     <string name="BloodyLockDone">Chat is locked</string>
     <string name="BloodyUnlockDone">Chat is unlocked</string>
     <string name="BloodyPrivacySection">Privacy</string>
+    <string name="BloodyRemind">Remind me</string>
+    <string name="BloodyRemind30m">In 30 minutes</string>
+    <string name="BloodyRemind1h">In an hour</string>
+    <string name="BloodyRemind3h">In 3 hours</string>
+    <string name="BloodyRemindTomorrow">Tomorrow at 9:00</string>
+    <string name="BloodyRemindSet">Reminder set: %1$s</string>
+    <string name="BloodyRemindMedia">Media message</string>
+    <string name="BloodyRemindChannel">Message reminders</string>
     <string name="BloodyUpdateCheck">Check for updates</string>
     <string name="BloodyUpdateLatest">You have the latest version</string>
     <string name="BloodyUpdateFailed">Couldn\'t check for updates</string>

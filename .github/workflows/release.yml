@@ -20,20 +20,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
           fetch-depth: 1
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
 
-      - uses: android-actions/setup-android@v3
-
+      # the runner image already has the Android SDK; android-actions/setup-android@v3 fails on the removed "tools" package
       - name: SDK packages
-        run: sdkmanager "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-36" "build-tools;36.0.0" > /dev/null
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-36" "build-tools;36.0.0" > /dev/null
 
       - uses: actions/cache@v4
         with:

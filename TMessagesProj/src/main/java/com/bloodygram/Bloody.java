@@ -16,6 +16,7 @@ public class Bloody {
         if (!started) {
             started = true;
             BloodyStreakReminder.schedule();
+            com.bloodygram.chat.BloodyRemind.schedule(); // alarms are lost on reboot
         }
     }
 }

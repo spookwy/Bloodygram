@@ -99,6 +99,14 @@
     <string name="BloodyLockDone_ru">Чат закрыт PIN-кодом</string>
     <string name="BloodyUnlockDone_ru">PIN с чата снят</string>
     <string name="BloodyPrivacySection_ru">Приватность</string>
+    <string name="BloodyRemind_ru">Напомнить</string>
+    <string name="BloodyRemind30m_ru">Через 30 минут</string>
+    <string name="BloodyRemind1h_ru">Через час</string>
+    <string name="BloodyRemind3h_ru">Через 3 часа</string>
+    <string name="BloodyRemindTomorrow_ru">Завтра в 9:00</string>
+    <string name="BloodyRemindSet_ru">Напомню: %1$s</string>
+    <string name="BloodyRemindMedia_ru">Медиа-сообщение</string>
+    <string name="BloodyRemindChannel_ru">Напоминания о сообщениях</string>
     <string name="BloodyUpdateCheck_ru">Проверить обновления</string>
     <string name="BloodyUpdateLatest_ru">У тебя последняя версия</string>
     <string name="BloodyUpdateFailed_ru">Не удалось проверить обновления</string>

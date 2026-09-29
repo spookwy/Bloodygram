@@ -6,6 +6,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.graphics.Typeface;
 
@@ -161,7 +163,12 @@ public class BloodyEditHistory {
                         text.append(" · ").append(BloodyStrings.get(R.string.BloodyEditHistoryCurrent));
                     }
                     text.setSpan(new StyleSpan(Typeface.BOLD), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    text.append("\n").append(version.text);
+                    text.append("\n");
+                    if (i == 0) {
+                        text.append(version.text);
+                    } else {
+                        appendDiff(text, versions.get(i - 1).text, version.text);
+                    }
                 }
                 AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
                 builder.setTitle(BloodyStrings.get(R.string.BloodyEditHistory));
@@ -170,6 +177,55 @@ public class BloodyEditHistory {
                 fragment.showDialog(builder.create());
             });
         });
+    }
+
+    /** Word diff against the previous version: removed words red and struck through, added words green. */
+    private static void appendDiff(SpannableStringBuilder out, String before, String after) {
+        ArrayList<String> a = tokens(before), b = tokens(after);
+        if ((long) a.size() * b.size() > 250_000) { // very long messages: just show the text
+            out.append(after);
+            return;
+        }
+        int[][] lcs = new int[a.size() + 1][b.size() + 1];
+        for (int i = a.size() - 1; i >= 0; i--) {
+            for (int j = b.size() - 1; j >= 0; j--) {
+                lcs[i][j] = a.get(i).equals(b.get(j)) ? lcs[i + 1][j + 1] + 1 : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+            }
+        }
+        int i = 0, j = 0;
+        while (i < a.size() || j < b.size()) {
+            if (i < a.size() && j < b.size() && a.get(i).equals(b.get(j))) {
+                out.append(b.get(j));
+                i++;
+                j++;
+            } else if (j < b.size() && (i == a.size() || lcs[i][j + 1] >= lcs[i + 1][j])) {
+                int start = out.length();
+                out.append(b.get(j++));
+                out.setSpan(new ForegroundColorSpan(0xFF3FBF6A), start, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                out.setSpan(new StyleSpan(Typeface.BOLD), start, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else {
+                int start = out.length();
+                out.append(a.get(i++));
+                out.setSpan(new ForegroundColorSpan(0xFFE0243C), start, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                out.setSpan(new StrikethroughSpan(), start, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+        }
+    }
+
+    /** Words and the whitespace runs between them, so joining the tokens gives the text back. */
+    private static ArrayList<String> tokens(String text) {
+        ArrayList<String> result = new ArrayList<>();
+        if (text == null) {
+            return result;
+        }
+        int start = 0;
+        for (int k = 1; k <= text.length(); k++) {
+            if (k == text.length() || Character.isWhitespace(text.charAt(k)) != Character.isWhitespace(text.charAt(k - 1))) {
+                result.add(text.substring(start, k));
+                start = k;
+            }
+        }
+        return result;
     }
 
     private ArrayList<Version> getVersions(long dialogId, int mid) {

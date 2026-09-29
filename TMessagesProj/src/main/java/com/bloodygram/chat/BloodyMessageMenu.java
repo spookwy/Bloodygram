@@ -38,6 +38,7 @@ public class BloodyMessageMenu {
             icons.add(R.drawable.msg_emoji_objects);
         }
         BloodySecretKeeper.addMenuItem(message, items, options, icons);
+        BloodyRemind.addMenuItem(message, items, options, icons);
     }
 
     public static void onOption(ChatActivity fragment, int option, MessageObject message) {
@@ -59,6 +60,8 @@ public class BloodyMessageMenu {
             explain(fragment, message);
         } else if (option == BloodySecretKeeper.OPTION_BURN) {
             BloodySecretKeeper.burn(fragment, message);
+        } else if (option == BloodyRemind.OPTION_REMIND) {
+            BloodyRemind.ask(fragment, message);
         }
     }
 
