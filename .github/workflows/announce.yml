@@ -1,0 +1,38 @@
+# Posts an already published release to the Telegram channel (text + download link) without rebuilding.
+# Run from the Actions tab or: gh workflow run announce.yml -f tag=v1.0.2
+name: Announce release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (empty = latest)
+        required: false
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHANNEL }}
+          TAG: ${{ github.event.inputs.tag }}
+        run: |
+          if [ -z "$TAG" ]; then TAG=$(gh api "repos/${{ github.repository }}/releases/latest" --jq .tag_name); fi
+          gh api "repos/${{ github.repository }}/releases/tags/$TAG" > release.json
+          VERSION="${TAG#v}"
+          URL=$(jq -r '[.assets[] | select(.name | endswith(".apk"))][0].browser_download_url // .html_url' release.json)
+          {
+            echo "🩸 Bloodygram $VERSION"
+            echo
+            jq -r '.body // ""' release.json
+            echo
+            echo "⬇️ $URL"
+          } > post.txt
+          cat post.txt
+          curl -sS -f "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
+            --data-urlencode "chat_id=$TG_CHAT" \
+            --data-urlencode "text@post.txt" \
+            --data-urlencode "disable_web_page_preview=true" > /dev/null
