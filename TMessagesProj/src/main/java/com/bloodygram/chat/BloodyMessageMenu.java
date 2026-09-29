@@ -37,6 +37,7 @@ public class BloodyMessageMenu {
             options.add(OPTION_AI_EXPLAIN);
             icons.add(R.drawable.msg_emoji_objects);
         }
+        com.bloodygram.ai.BloodyAiDigest.addMenuItem(message, items, options, icons);
         BloodySecretKeeper.addMenuItem(message, items, options, icons);
         BloodyRemind.addMenuItem(message, items, options, icons);
     }
@@ -62,6 +63,8 @@ public class BloodyMessageMenu {
             BloodySecretKeeper.burn(fragment, message);
         } else if (option == BloodyRemind.OPTION_REMIND) {
             BloodyRemind.ask(fragment, message);
+        } else if (option == com.bloodygram.ai.BloodyAiDigest.OPTION_TRANSLATE) {
+            com.bloodygram.ai.BloodyAiDigest.translate(fragment, message);
         }
     }
 

@@ -67,6 +67,7 @@ public class BloodySettingsActivity extends UniversalFragment {
     private static final int ID_AI_PROVIDER = 38;
     private static final int ID_UPDATE = 39;
     private static final int ID_STREAK_FREEZE = 40;
+    private static final int ID_STREAK_TOP = 41;
 
     private static final String[] TRANSCRIBE_LANGS = {"", "ru-RU", "uk-UA", "en-US"};
 
@@ -186,6 +187,7 @@ public class BloodySettingsActivity extends UniversalFragment {
         items.add(UItem.asHeader(BloodyStrings.get(R.string.BloodyStreaks)));
         items.add(UItem.asCheck(ID_STREAKS, BloodyStrings.get(R.string.BloodyStreaksEnabled)).setChecked(BloodyConfig.streaksEnabled));
         if (BloodyConfig.streaksEnabled) {
+            items.add(UItem.asButton(ID_STREAK_TOP, BloodyStrings.get(R.string.BloodyStreakTop)));
             items.add(UItem.asCheck(ID_STREAK_LIST, BloodyStrings.get(R.string.BloodyStreakShowList)).setChecked(BloodyConfig.streakInList));
             items.add(UItem.asCheck(ID_STREAK_HEADER, BloodyStrings.get(R.string.BloodyStreakShowHeader)).setChecked(BloodyConfig.streakInHeader));
             items.add(UItem.asCheck(ID_STREAK_PROFILE, BloodyStrings.get(R.string.BloodyStreakShowProfile)).setChecked(BloodyConfig.streakInProfile));
@@ -388,6 +390,8 @@ public class BloodySettingsActivity extends UniversalFragment {
         } else if (item.id == ID_STREAK_CELEBRATION) {
             BloodyConfig.putBoolean("streakCelebration", BloodyConfig.streakCelebration = !BloodyConfig.streakCelebration);
             listView.adapter.update(true);
+        } else if (item.id == ID_STREAK_TOP) {
+            presentFragment(new com.bloodygram.streaks.BloodyStreakTopActivity());
         } else if (item.id == ID_STREAK_FREEZE) {
             BloodyConfig.putBoolean("streakFreeze", BloodyConfig.streakFreeze = !BloodyConfig.streakFreeze);
             BloodyStreaks.getInstance(currentAccount).recalcAll(); // with the freeze the scan has to look past single gaps

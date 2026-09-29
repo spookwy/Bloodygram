@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BloodySecretKeeper {
 
     private static final String DB_NAME = "epicgram_secret_media.db";
-    public static final int OPTION_BURN = 10008;
+    public static final int OPTION_BURN = 10010;
     private static final int VIEW_ONCE = 0x7FFFFFFF;
 
     private static Helper helper;

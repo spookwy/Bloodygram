@@ -78,6 +78,12 @@
 - `com.bloodygram.chat.BloodyTranscriber` — расшифровка голосовых/видеосообщений в текст без Premium, на устройстве (Android 13+, `SpeechRecognizer`). Декодирует voice/round-video в PCM 16 кГц через `MediaCodec`, отдаёт в `SpeechRecognizer.createOnDeviceSpeechRecognizer` с `EXTRA_AUDIO_SOURCE`=pipe. **On-device распознавание не читает аудио-источник, если языковой пакет не скачан** — тогда `onError` триггерит `triggerModelDownload` и просит повторить через минуту (не молча падает и не уходит в `NetworkSpeechRecognizer`, который с этим pipe не работает вообще — see `ERROR_LANGUAGE_UNAVAILABLE`/`ERROR_LANGUAGE_NOT_SUPPORTED` в `onError`). Язык — настройка `transcribeLang` (пусто = язык телефона). `withFile` ждёt загрузку файла с таймаутом 30 с (иначе завис бы спиннер/утекал наблюдатель, если `fileLoaded`/`fileLoadFailed` не пришли).
 - `com.bloodygram.chat.BloodyMessageMenu` / `com.bloodygram.ai.BloodyAiChat` — пункты меню сообщения («Расшифровать», «✨ Объяснить») и меню чата («✨ Пересказать чат», «✨ Варианты ответа»), плюс `com.bloodygram.ai.BloodyAi` — тонкий клиент Anthropic Java SDK (`claude-opus-5` по умолчанию, ключ юзера в настройках, `server-side-fallback` бета для opus/fable). Диалоги строятся через `fragment.getParentActivity()`, с null-чеком до и после асинхронного вызова (фрагмент мог уйти со сцены, пока ждали ответ/скачивание файла).
 - `com.bloodygram.chat.BloodyAutoDelete` — «Удалить у всех через…» из меню отправки (1мин/5мин/1час/1день): следующее отправленное в этот чат сообщение планируется на авто-удаление (`deleteMessages(forAll=true)`), очередь переживает перезапуск (SharedPreferences + `AlarmManager`/`BroadcastReceiver` будят процесс, если приложение не запущено).
+- `com.bloodygram.deleted.BloodyTrashActivity` — «Корзина»: все сохранённые удалённые сообщения из всех чатов (`BloodyDeletedMessages.loadTrash`: id из нашей БД → сами сообщения из `messages_v2` Telegram, для каналов `uid = -channel_id`, для лички/групп `is_channel = 0`), `DialogCell.setDialog(dialogId, messageObject, ...)`, поиск по тексту и названию чата, тап открывает чат на сообщении (`message_id`). Вход: ⋮ над списком чатов и настройки.
+- `com.bloodygram.chat.BloodyRemind` — «Напомнить» в меню сообщения (30 мин/1 ч/3 ч/завтра 9:00): JSON-очередь в prefs `reminders`, `AlarmManager` → `BroadcastReceiver` → уведомление (канал `bloodygram_reminders`), тап открывает чат на сообщении (`userId`/`chatId` + `message_id`). `schedule()` при старте (будильники теряются после перезагрузки).
+- `com.bloodygram.ai.BloodyAiProvider` — провайдеры ИИ: OpenRouter/Gemini/Groq (бесплатные ключи), DeepSeek, Claude (SDK). Не-Claude — OpenAI-совместимый `chat/completions` на `HttpURLConnection`. Названия моделей устаревают → список в настройках берётся живьём из `/models` провайдера, а на 404 `ask()` сам выбирает живую модель и повторяет. Ключ/модель на провайдера: prefs `aiKey_<id>`/`aiModel_<id>` (Claude — старые `aiApiKey`/`aiModel`). `BloodyAiDigest` — «✨ Дайджест каналов» (⋮ над списком: непрочитанное до 15 каналов через `getHistory`, не помечает прочитанным) и «✨ Перевести» в меню сообщения.
+- `com.bloodygram.streaks.BloodyStreakTopActivity` — «Мои огоньки»: живые серии по убыванию, подзаголовок «сегодня погаснут: N». Заморозка (`streakFreeze`, выкл. по умолчанию, иначе расходится с плагином): один пропущенный день в 7 дней не рвёт серию (`canFreeze` в `recompute`, `isAlive`, `isAtRisk`, `walk` скана).
+- История правок (`BloodyEditHistory`) показывает пословный дифф между версиями (LCS по словам): удалённое красным зачёркнутым, добавленное зелёным.
+- Иконка: исходники `Tools/bloodygram/art/*.png` → `node Tools/bloodygram/make_icons.js` → `drawable-nodpi/bloody_logo.png` (в приложении), `bloody_icon_fg.png` (адаптивная иконка, чёрный фон), `bloody_icon_legacy.png`. Логотипы Telegram перекрыты в app-модуле через `drawable-anydpi` (`ic_launcher_dr`, `logo_middle`) — anydpi главнее плотностных папок библиотеки. Надпись «Telegram» в шапке историй (`DialogStoriesCell.telegramLogoView`) → `BloodyTitleDrawable`.
 - `com.bloodygram.ui.BloodyAccounts` — своя тема на аккаунт: применяется в `LaunchActivity.switchToAccount` после переключения (**не** применяется при холодном старте в уже выбранный аккаунт — известное ограничение, см. «Следующие задачи»).
 - `com.bloodygram.stats.BloodyWrapped`/`BloodyWrappedUi` — «Bloodygram Wrapped», статистика года по локально закэшированным сообщениям (топ собеседники, топ эмодзи, самые активные часы и т.п.), экран из настроек.
 - `com.bloodygram.ui.BloodyFx` — визуальные эффекты: искры при отправке (`onSend`, ударная волна + частицы к кнопке отправки), фон чата — снег/угли/искры/**топографическая карта** (`chatParticles`: `PARTICLES_SNOW/ASH/SPARKS/TOPO`). **Топокарта** — контурные линии (marching squares по value-noise полю, два блендированных октава + `Paint.Join/Cap.ROUND` и более толстый `stroke` для скруглённости) красным на чёрном; вместо монотонного дрейфа в сторону — орбита фиксированного радиуса в noise-пространстве (`ORBIT_MS`/`ORBIT_RADIUS`, по `cos`/`sin` от фазы), поэтому узор не «уезжает» с экрана, а крутится на месте. Реагирует на свайпы: `SizeNotifierFrameLayout.backgroundTranslationY` прокинут третьим параметром через `drawChatParticles(view, canvas, scrollOffset)` в `TopoMap.draw()`, подмешивается в сэмплирование noise (`SCROLL_FOLLOW`). Пересчитывается раз в ~90 мс в закэшированный Bitmap (не каждый кадр — иначе дорого), сам блит на канвас идёт каждый кадр. Полностью красит фон в чёрный (не оверлей поверх обоев, как снег/угли/искры).
@@ -85,10 +91,16 @@
 - `com.bloodygram.ui.BloodyCaret` — плавно скользящий курсор ввода взамен штатного (тот у Telegram прыгает мгновенно). Рисуется поверх `super.onDraw()` в `ChatActivityEditTextCaption` (только поле ввода чата, не общий `EditTextBoldCursor`/`EditTextCaption` — сознательно не трогаем шаренные классы, чтобы не сломать другие текстовые поля в приложении). Штатный курсор гасится через `setAllowDrawCursor(false)`, но переключается только при реальной смене состояния (`bloodySmoothCursorApplied`) — `setAllowDrawCursor` сам вызывает `invalidate()` безусловно, дёргать его каждый кадр = бесконечный перерисовочный цикл. Позиция считается ровно как в `EditTextBoldCursor.updateCursorPosition()` (`layout.getPrimaryHorizontal(offset)` без вычета scrollX/padding по горизонтали, `getLineTop(line)`/`getLineTop(line+1)` по вертикали). Движение — пружина с критическим затуханием по X и по строке (`OMEGA = 14` рад/с, ~300 мс до остановки, подшаги по 4 мс), стартует с нулевой скорости. Экспоненциальное сглаживание (было раньше) не годилось: пик скорости на первом кадре = рывок. Важно: при выходе из покоя `lastFrame = now - 16` — иначе первый шаг интегрирует секунды простоя и курсор прыгает (это и была причина «всё ещё резкий»). Толщина `2.6dp`. Проверка плавности без видео: `scratchpad/caret.js` ищет синие пиксели курсора на серии `screencap`, снятой прямо на устройстве (`adb shell "input text X; screencap ...; screencap ..."`), — видно промежуточные позиции.
 - Стиль кода — как в Telegram: Java, без лишних абстракций, `AndroidUtilities.dp()`, `Theme.getColor()`.
 
-## Git
+## Git и релизы
 
-- Коммиты на `main` поверх `upstream/master` 12.10.5 (локально, не запушено).
+- `origin` = https://github.com/spookwy/Bloodygram (публичный **форк** DrKLO/Telegram — поэтому пуш из shallow-клона работает: база 12.10.5 уже есть в форке). Ветка по умолчанию `main`. gh залогинен как `spookwy`.
+- Релиз: поднять `BLOODY_VERSION_NAME` в `gradle.properties` → коммит → тег `v<версия>` → `.github/workflows/release.yml` собирает `assembleAfatRelease` (~1 ч, весь натив с нуля) и публикует `Bloodygram-<версия>.apk` в Releases. `APP_VERSION_*` не трогать — это версия Telegram (уходит на сервер).
+- Секреты репозитория: `BLOODY_APP_ID/HASH`, `BLOODY_KEYSTORE_BASE64`, `BLOODY_STORE_PASSWORD`, `BLOODY_KEY_ALIAS`, `BLOODY_KEY_PASSWORD`. CI пишет из них `local.properties`.
+- Своя подпись только у **release** (пакет `com.bloodygram.messenger`, без `.beta`): ключ `Desktop\Projects\Bloodygram-keys\bloodygram-release.jks` (вне репо; пароль там же в README.txt и в `local.properties`). Debug (`.beta`) по-прежнему на тестовом ключе апстрима — чтобы не переустанавливать с потерей данных. Потерять ключ = пользователи не смогут обновиться.
+- `android-actions/setup-android@v3` на раннере падает (пакет `tools` удалён) — в workflow `sdkmanager` зовётся напрямую из предустановленного SDK.
+- Обновления в приложении: `com.bloodygram.update.BloodyUpdater` — GitHub API `releases/latest`, сравнение тега с `BuildConfig.BLOODY_VERSION`; авто-проверка только в release, раз в 12 ч (хук в `LaunchActivity.onResume`), ручная — кнопка внизу настроек Bloodygram.
 - В `git stash` лежит старая запись `epic-wip` — резервная копия раннего состояния, давно устарела; можно удалить (`git stash drop`).
+- ⚠️ Не править `shared_prefs/*.xml` на эмуляторе через `sed` с подстановкой (`&` в замене = совпадение → битый XML → приложение молча сбрасывает ВСЕ настройки, так 29.09 пропали PIN/скрытые чаты на эмуляторе). Править локальную копию (node) → `adb push` в `/data/local/tmp` (с `MSYS_NO_PATHCONV=1`) → `run-as cp`, приложение при этом остановлено.
 
 ## Обновление от апстрима
 
@@ -100,7 +112,8 @@
 
 # Следующие задачи
 
-- Своя иконка (не бумажный самолётик) — сейчас в UI остались логотипы Telegram (напр. `telegram_logo_2` в `DialogStoriesCell`).
+- Иконка сейчас — самолётик Telegram в кровавом круге (выбор пользователя). По правилам Telegram для сторонних клиентов их логотип использовать нельзя — перед широкой раздачей заменить на свой знак.
+- Не сделано из списка идей 29.09: подсказки ответа прямо над клавиатурой (сейчас — через ⋮ «Варианты ответа»), автоперевод всего чата, расширенная статистика по чату, выбор иконки приложения (нужна вторая картинка), проход темой по остальным экранам, плагины.
 - Проверить удалённые сообщения после повторного открытия чата (см. Этап 1).
 - Per-account тема (`BloodyAccounts`) не применяется при холодном старте в уже выбранный аккаунт — только при явном переключении через `switchToAccount`. Мелкий баг, не чинили из-за риска зацепить порядок восстановления темы при старте.
 - Paid Media (Stars) — пользователь просил показывать платные медиа бесплатно/заблюренными. **Отказано**: это обход платёжной системы Telegram (сервер просто не отдаёт файл без оплаты), риск бана аккаунта, вне правил — не делать.
@@ -129,7 +142,7 @@
 - [x] `applicationId` → `com.epicgram.messenger`, `AppName` → «Bloodygram» во всех локалях
 - [x] Переименование Epicgram → Bloodygram (пакет `com.bloodygram`, классы `Bloody*`, строки, хуки `// Bloodygram`, заголовок списка чатов)
 - [x] `applicationId` → `com.bloodygram.messenger`
-- [ ] Своя иконка (не бумажный самолётик)
+- [x] Своя иконка (пока самолётик в кровавом круге — см. «Следующие задачи»)
 - [x] Firebase-конфиги → заглушки; выключены `CHECK_UPDATES`, `SUPPORTS_PASSKEYS`, `SAFETYNET_KEY`
 - [ ] Проверить остальные «официальные» вещи: Google Auth client id, биллинг/Stars, ссылки на Play Store
 - [x] Debug-сборка собирается (arm64, ~2 мин инкрементально)
@@ -161,7 +174,8 @@
 - [x] Прогресс подсчёта в окне «Огонёк» (полоска + «проверено N дней»)
 - [x] Цвет имени по уровню огонька (список, шапка, профиль), тумблер
 - [x] Удалённые сообщения работают (в т.ч. при закрытом приложении через keep-alive)
-- [ ] Локальное уведомление вечером «огонёк погаснет»
+- [x] Локальное уведомление вечером «огонёк погаснет» (`BloodyStreakReminder`)
+- [x] «Мои огоньки» (топ серий), заморозка (тумблер)
 - [ ] Помнить: огонёк локальный, собеседник на обычном Telegram его не видит
 
 ## Этап 3 — Дизайн и плавность
@@ -182,9 +196,10 @@
 - [ ] Анимированный курсор ввода (плавно двигается, не прыгает) — сознательно не делали: это глубокий хук в `EditTextBoldCursor`, общий для всех текстовых полей приложения, риск регрессии выше пользы; можно вернуться, если попросят отдельно
 
 ## Этап 4 — Релиз
-- [ ] Свой GitHub-репо (GPL), README, CI-сборка APK (GitHub Actions)
-- [ ] Release keystore, подпись, версии `Bloodygram x.y (TG 12.x.y)`
-- [ ] Канал в Telegram для релизов, OTA-проверка обновлений через свой канал/GitHub Releases
+- [x] Свой GitHub-репо (GPL), README, CI-сборка APK (GitHub Actions) — spookwy/Bloodygram, v1.0.0
+- [x] Release keystore, подпись, версии `Bloodygram x.y (TG 12.x.y)`
+- [x] OTA-проверка обновлений через GitHub Releases
+- [ ] Канал в Telegram для релизов
 
 ## Этап 5 — Приватность и ИИ (добавлено 28–29.09.2026)
 - [x] Режим призрака (не отправлять «прочитано»/«онлайн»/«печатает», per-account, ⋮-меню списка чатов + настройки)

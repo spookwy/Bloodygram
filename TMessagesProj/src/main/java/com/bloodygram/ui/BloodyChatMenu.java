@@ -115,6 +115,13 @@ public class BloodyChatMenu {
         if (BloodyVault.hasPin()) {
             io.add(R.drawable.msg_archive_hide, BloodyStrings.get(R.string.BloodyHiddenChats), () -> BloodyVault.openHiddenChats(fragment));
         }
+        if (com.bloodygram.ai.BloodyAi.hasKey()) {
+            io.add(R.drawable.msg_emoji_objects, BloodyStrings.get(R.string.BloodyAiDigest), () -> com.bloodygram.ai.BloodyAiDigest.digest(fragment));
+        }
+        if (BloodyConfig.streaksEnabled) {
+            io.add(com.bloodygram.streaks.BloodyFire.drawable(org.telegram.messenger.AndroidUtilities.dp(24), com.bloodygram.streaks.BloodyFire.TIER_ORANGE).getConstantState().newDrawable().mutate(),
+                    BloodyStrings.get(R.string.BloodyStreakTop), () -> fragment.presentFragment(new com.bloodygram.streaks.BloodyStreakTopActivity()));
+        }
         if (BloodyConfig.saveDeletedMessages) {
             io.add(R.drawable.msg_delete, BloodyStrings.get(R.string.BloodyTrash), () -> fragment.presentFragment(new com.bloodygram.deleted.BloodyTrashActivity()));
         }

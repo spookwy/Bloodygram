@@ -277,6 +277,19 @@ public class BloodyStreaks implements NotificationCenter.NotificationCenterDeleg
         return suffix == null || title == null ? title : TextUtils.concat(title, suffix.text);
     }
 
+    /** Alive streaks, longest first: {dialogId, length, atRisk 0/1}. */
+    public ArrayList<long[]> getTop() {
+        ArrayList<long[]> result = new ArrayList<>();
+        for (Map.Entry<Long, Streak> entry : streaks.entrySet()) {
+            Streak s = entry.getValue();
+            if (s.length > 0 && isAlive(s) && isEligible(entry.getKey())) {
+                result.add(new long[]{entry.getKey(), s.length, isAtRisk(s) ? 1 : 0});
+            }
+        }
+        result.sort((a, b) -> Long.compare(b[1], a[1]));
+        return result;
+    }
+
     /** Chats whose streak goes out at midnight: {dialogId, streak}; delivered on the UI thread after the DB is loaded. */
     public void collectAtRisk(Utilities.Callback<ArrayList<long[]>> callback) {
         queue.postRunnable(() -> {

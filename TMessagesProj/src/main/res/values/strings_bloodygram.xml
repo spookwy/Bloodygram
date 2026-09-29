@@ -101,7 +101,14 @@
     <string name="BloodyLockDone">Chat is locked</string>
     <string name="BloodyUnlockDone">Chat is unlocked</string>
     <string name="BloodyPrivacySection">Privacy</string>
+    <string name="BloodyAiDigest">✨ Channels digest</string>
+    <string name="BloodyAiDigestNothing">No unread posts in channels</string>
+    <string name="BloodyAiTranslate">✨ Translate</string>
     <string name="BloodyStreakFreeze">Freeze: one missed day a week is forgiven</string>
+    <string name="BloodyStreakTop">My streaks</string>
+    <string name="BloodyStreakTopSubtitle">%1$d streaks</string>
+    <string name="BloodyStreakTopSubtitleRisk">%1$d streaks · %2$d go out tonight</string>
+    <string name="BloodyStreakTopEmpty">No streaks yet. Write to each other every day and a fire will light up.</string>
     <string name="BloodyRemind">Remind me</string>
     <string name="BloodyRemind30m">In 30 minutes</string>
     <string name="BloodyRemind1h">In an hour</string>

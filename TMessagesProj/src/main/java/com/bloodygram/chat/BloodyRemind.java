@@ -37,7 +37,7 @@ import java.util.Calendar;
 /** "Remind me about this message": a local notification later that opens the chat right at the message. */
 public class BloodyRemind extends BroadcastReceiver {
 
-    public static final int OPTION_REMIND = 10009;
+    public static final int OPTION_REMIND = 10011;
     private static final String CHANNEL = "bloodygram_reminders";
     private static final String KEY = "reminders";
     private static final int[] MINUTES = {30, 60, 3 * 60, -1}; // -1 = tomorrow 9:00
